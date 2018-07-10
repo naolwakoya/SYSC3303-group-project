@@ -1,31 +1,23 @@
-**************
-*SYSC 3303    *
-Assignment 1 *
-**************
-##Contributors
-Student1:  Naol Gushu 100911600
-Student2:  Melaku Semaw 101059910
-Contents
-This Assignment contains UDPClient.java, UDPProxy.java, UDPServer1.java, UDPServer2.java,
-README.md and Makefile
-### To compile you can use the Makefile
-  - To run this
-    - run `make build` in current directory to compile all the files
+`Iteration #1`
+***Carleton University
+Department of Systems and Computer Engineering
+SYSC3303 Real Time Concurrent System - Summer 2018****
+**Naol Gushu _____ 100911600
+**Melaku Semaw ____101059910
+**Keith Ko_________100973372
+**Chengyang Liu____101011773
+**Raymond Wu_______100938326  
 
+>>Project Specification
+This project design and implement a file transfer system based on the TFTP protocol
+specification which is available on the course website.
+ìREADME.txtî file explaining the names of your files, set up instructions, etc.
+Breakdown of responsibilities of each team member for this iteration
+UML class diagram
+UCMs for a read file transfer and a write file transfer, including the error simulator
+Detailed set up and test instructions, including test files used
+Code (.java files, all required Eclipse files, etc.)
+File included:
 
-
-
-### Attention
-Run the UDPservers first `Note` the server will only wait for 15 seconds before
-a `SocketTimeoutException` is thrown
-
-then
-
-run `java UDPProxy` and `java UDPClient` last
-## Description
-For this Assignment we use port `7000` UDPServer1 and port `6000` for UDPServer2
-
-#Purpose
-The purpose of this is Assignment is to allow you to experiment with client server
- programming in Java as a building block of building more complex concurrent systems
- in the future. You will be experimenting with UDP programming in Java for this assignment
+          test --> The test package for the main code
+          tftp -->
