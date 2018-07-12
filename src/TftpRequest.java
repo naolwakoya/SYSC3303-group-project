@@ -6,8 +6,12 @@ public class TftpRequest extends TftpPacket{
 	String type;
 	String mode = "ascii";
 
-	public TftpRequest(String fileName, String type){
-		this.type = type;
+	public TftpRequest(String fileName, String type) throws IllegalArgumentException{
+		if (type.equals("read") || type.equals("write"))
+			this.type = type;
+		else {
+			throw new IllegalArgumentException("invalid read or write request");
+		}
 		this.fileName = fileName;
 	}
 	
@@ -26,7 +30,7 @@ public class TftpRequest extends TftpPacket{
 		// Start with a 0
 		data.write(0);
 		// Set the action type flag
-		if (type == "read")
+		if (type.equals("read"))
 			data.write(1);
 		else
 			data.write(2);

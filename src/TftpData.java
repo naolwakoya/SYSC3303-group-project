@@ -2,17 +2,21 @@ import java.io.ByteArrayOutputStream;
 
 public class TftpData extends TftpPacket{
 	
+	static int MAX_SIZE = 512;
 	int blockNumber = 0;
 	byte[] data = null;
+	int dataLength;
 	
-	public TftpData(int blockNumber, byte[] data){
+	public TftpData(int blockNumber, byte[] data, int dataLength){
 		this.blockNumber=blockNumber;
-		if(data == null || data.length == 0){
+		if(data == null || dataLength == 0){
 			this.data = new byte[0];
+			this.dataLength = dataLength;
 		}
 		else {
-			this.data = new byte[data.length];
-			System.arraycopy(data, 0, this.data, 0, data.length);
+			this.data = new byte[dataLength];
+			this.dataLength = dataLength;
+			System.arraycopy(data, 0, this.data, 0, dataLength);
 		}
 	}
 	
@@ -23,7 +27,7 @@ public class TftpData extends TftpPacket{
 		d.write(3);
 		d.write(blockNumber >> 8);
 		d.write(blockNumber);
-		d.write(data, 0, data.length);
+		d.write(data, 0, dataLength);
 		return d.toByteArray();
 	}
 
