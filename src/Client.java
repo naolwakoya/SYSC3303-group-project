@@ -38,10 +38,20 @@ public class Client {
         }
         
         TftpRequest req = new TftpRequest(fileName, request);
+        try {
+			sendPacket = req.generatePacket(InetAddress.getLocalHost(), REQUEST_PORT);
+		} catch (UnknownHostException e1) {
+			e1.printStackTrace();
+		}
+        
+        if (verbose) {
+            System.out.println("Sending packet:");
+            printPacketInformation(sendPacket);
+            }
         
         // Send the packet via the sendReceiveSocket
         try {
-            sendReceiveSocket.send(req.generatePacket(InetAddress.getLocalHost(), REQUEST_PORT));
+            sendReceiveSocket.send(sendPacket);
             sourceTID = sendReceiveSocket.getPort();
         } catch (IOException e) {
             e.printStackTrace();
@@ -84,14 +94,10 @@ public class Client {
 				dataPacket = new TftpData(blockNumber, data, nRead);
 				sendPacket = dataPacket.generatePacket(receivePacket.getAddress(), destinationTID);
 				
-				if (verbose) {
-					  System.out.println( "Sending packet:");
-			            System.out.println("To host: " + sendPacket.getAddress());
-			            System.out.println("Destination host port: " + sendPacket.getPort());
-			            System.out.println("Packet length: " + sendPacket.getLength());
-			            System.out.println("Containing: " + sendPacket.getData());
-			            System.out.println("String form: " + new String(sendPacket.getData(),0,sendPacket.getLength()));
-				}
+		        if (verbose) {
+		            System.out.println("Sending packet:");
+		            printPacketInformation(sendPacket);
+		            }
 				
 				try {
 					sendReceiveSocket.send(sendPacket);
@@ -150,15 +156,10 @@ public class Client {
 	            	
 					sendPacket = ack.generatePacket(receivePacket.getAddress(), destinationTID);
 					
-					if (verbose) {
-						  System.out.println( "Sending packet:");
-				            System.out.println("To host: " + sendPacket.getAddress());
-				            System.out.println("Destination host port: " + sendPacket.getPort());
-				            System.out.println("Packet length: " + sendPacket.getLength());
-				            System.out.println("Containing: " + sendPacket.getData());
-				            System.out.println("String form: " + new String(sendPacket.getData(),0,sendPacket.getLength()) + "\n");
-					}
-	            	
+			        if (verbose) {
+			            System.out.println("Sending packet:");
+			            printPacketInformation(sendPacket);
+			            }
 	            	
 	            	try {
 	            		sendReceiveSocket.send(sendPacket);
@@ -202,15 +203,22 @@ public class Client {
         }
         
         if (verbose) {
-        //Process the received datagram
         System.out.println("Received packet:");
-        System.out.println("From host: " + receivePacket.getAddress());
-        System.out.println("Host port: " + receivePacket.getPort());
-        System.out.println("Packet length: " + receivePacket.getLength());
-        System.out.println("Containing: " + receivePacket.getData());
-        String received = new String(receivePacket.getData(),0,receivePacket.getLength());
-        System.out.println("String form: " + received + "\n");
+        printPacketInformation(receivePacket);
         }
+	}
+	
+	/*
+	 * Processes the received datagram and
+	 * Prints the packet information into the console
+	 */
+	public void printPacketInformation(DatagramPacket packet) {
+        System.out.println("Host: " + packet.getAddress());
+        System.out.println("Host port: " + packet.getPort());
+        System.out.println("Packet length: " + packet.getLength());
+        System.out.println("Containing: " + packet.getData());
+        String packetString = new String(packet.getData(),0,packet.getLength());
+        System.out.println("String form: " + packetString + "\n");
 	}
 	
 
