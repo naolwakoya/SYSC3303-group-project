@@ -1,0 +1,5 @@
+package Types;
+
+class InstanceType {
+
+}
