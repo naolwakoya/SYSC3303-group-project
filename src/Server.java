@@ -1,11 +1,13 @@
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.SyncFailedException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.SocketException;
 
 public class Server {
@@ -75,7 +77,7 @@ public class Server {
                     e.printStackTrace();
                     System.exit(1);
                 }
-            	
+            	sendFile();
             }
 
         }
@@ -105,7 +107,6 @@ public class Server {
 						fileData = extractFromDataPacket(receivePacket.getData(), receivePacket.getLength());
 						outputStream.write(fileData);
 						outputStream.getFD().sync();
-						System.out.println(fileData.length);
 					} else{
 						System.out.println("Cannot write to file");
 						return;
@@ -137,7 +138,51 @@ public class Server {
     }
     
     public void sendFile(){
-    	
+    	try {
+			String filePath = System.getProperty("user.dir") + "/serverFiles/" + fileName;
+			System.out.println(filePath);
+			//Make sure file exists
+			File file = new File(filePath);
+			if (!file.exists()) {
+				System.out.println("Cannot find file: " + fileName);
+				return;
+			}
+
+			FileInputStream inputStream = new FileInputStream(file);
+			
+			int blockNumber = 1;
+			int nRead=0;
+			byte[] data = new byte [512];
+			TftpData dataPacket;
+			
+			do {
+				nRead = inputStream.read(data);
+				if (nRead == -1) {
+					nRead = 0;
+					data = new byte[0];
+				}
+				dataPacket = new TftpData(blockNumber, data, nRead);
+				try {
+					sendReceiveSocket.send(dataPacket.generatePacket(InetAddress.getLocalHost(), receivePacket.getPort()));
+				} catch (IOException e1) {
+		            e1.printStackTrace();
+		            System.exit(1);
+				}
+				
+		       this.receive();
+		       blockNumber++;
+		       
+		       
+			} while (nRead == 512);
+			
+			inputStream.close();
+			
+	       
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
     }
     
 	public void receive(){

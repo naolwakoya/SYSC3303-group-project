@@ -1,8 +1,10 @@
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.SyncFailedException;
 import java.net.*;
 import java.util.Scanner;
 
@@ -50,7 +52,7 @@ public class Client {
 	
 	public void writeFile(String fileName){
 		try {
-			String filePath = System.getProperty("user.dir") + "/" + fileName;
+			String filePath = System.getProperty("user.dir") + "/clientFiles/" + fileName;
 			System.out.println(filePath);
 			//Make sure file exists
 			File file = new File(filePath);
@@ -98,8 +100,56 @@ public class Client {
 	}
 	
 	public void readFile(String fileName){
-		
-	}
+		String filePath = System.getProperty("user.dir") + "/clientFiles/" + fileName;
+		try{
+			File file = new File(filePath);
+			if (file.exists() && !file.canWrite()){
+				System.out.println("Can't overwrite existing file");
+				return;
+			}
+			
+			byte[] fileData;
+			FileOutputStream outputStream = new FileOutputStream(filePath);
+			int blockNumber = 1;
+			
+			do {
+				try{
+					this.receive();
+					
+					if (file.canWrite()){
+						fileData = extractFromDataPacket(receivePacket.getData(), receivePacket.getLength());
+						outputStream.write(fileData);
+						outputStream.getFD().sync();
+					} else{
+						System.out.println("Cannot write to file");
+						return;
+					}
+	            	// Send acknowledgement packet
+	            	TftpAck ack = new TftpAck(blockNumber++);
+	            	try {
+	            		sendReceiveSocket.send(ack.generatePacket(receivePacket.getAddress(), receivePacket.getPort()));
+	            	}catch (IOException e) {
+	                    e.printStackTrace();
+	                    System.exit(1);
+	                }
+					
+				}
+				catch (SyncFailedException e){
+					outputStream.close();
+					file.delete();
+					return;
+				}
+			} while (!(fileData.length<512));
+			
+			outputStream.close();
+    	}
+    	catch (FileNotFoundException e1){
+    		return;
+    	}catch (IOException e) {
+    		new File(filePath).delete();
+			return;
+    	}
+    }
 	
 	public void receive(){
 		 //Create a DatagramPacket for receiving packets
@@ -123,6 +173,12 @@ public class Client {
 		else 
 			return false;
 	}
+	
+    public byte[] extractFromDataPacket(byte[] data, int dataLength){
+		ByteArrayOutputStream stream = new ByteArrayOutputStream();
+		stream.write(data, 4, dataLength-4);
+		return data = stream.toByteArray();
+    }
 	
 	public static void main(String[] args){
 		Client c = new Client();
