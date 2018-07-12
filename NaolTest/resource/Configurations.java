@@ -1,0 +1,5 @@
+package resource;
+
+class Configurations {
+
+}
