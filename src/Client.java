@@ -14,9 +14,10 @@ public class Client {
 	int sourceTID, destinationTID;
 	
     DatagramSocket sendReceiveSocket;
-    DatagramPacket receivePacket;
+    DatagramPacket receivePacket, sendPacket;
     
     boolean connected = false;
+    boolean verbose = true;
 	
 	public Client(){
 		
@@ -81,8 +82,19 @@ public class Client {
 					data = new byte[0];
 				}
 				dataPacket = new TftpData(blockNumber, data, nRead);
+				sendPacket = dataPacket.generatePacket(receivePacket.getAddress(), destinationTID);
+				
+				if (verbose) {
+					  System.out.println( "Sending packet:");
+			            System.out.println("To host: " + sendPacket.getAddress());
+			            System.out.println("Destination host port: " + sendPacket.getPort());
+			            System.out.println("Packet length: " + sendPacket.getLength());
+			            System.out.println("Containing: " + sendPacket.getData());
+			            System.out.println("String form: " + new String(sendPacket.getData(),0,sendPacket.getLength()));
+				}
+				
 				try {
-					sendReceiveSocket.send(dataPacket.generatePacket(receivePacket.getAddress(), destinationTID));
+					sendReceiveSocket.send(sendPacket);
 				} catch (IOException e1) {
 		            e1.printStackTrace();
 		            System.exit(1);
@@ -135,8 +147,21 @@ public class Client {
 					}
 	            	// Send acknowledgement packet
 	            	TftpAck ack = new TftpAck(blockNumber++);
+	            	
+					sendPacket = ack.generatePacket(receivePacket.getAddress(), destinationTID);
+					
+					if (verbose) {
+						  System.out.println( "Sending packet:");
+				            System.out.println("To host: " + sendPacket.getAddress());
+				            System.out.println("Destination host port: " + sendPacket.getPort());
+				            System.out.println("Packet length: " + sendPacket.getLength());
+				            System.out.println("Containing: " + sendPacket.getData());
+				            System.out.println("String form: " + new String(sendPacket.getData(),0,sendPacket.getLength()) + "\n");
+					}
+	            	
+	            	
 	            	try {
-	            		sendReceiveSocket.send(ack.generatePacket(receivePacket.getAddress(), destinationTID));
+	            		sendReceiveSocket.send(sendPacket);
 	            	}catch (IOException e) {
 	                    e.printStackTrace();
 	                    System.exit(1);
@@ -176,6 +201,7 @@ public class Client {
             System.exit(1);
         }
         
+        if (verbose) {
         //Process the received datagram
         System.out.println("Received packet:");
         System.out.println("From host: " + receivePacket.getAddress());
@@ -184,6 +210,7 @@ public class Client {
         System.out.println("Containing: " + receivePacket.getData());
         String received = new String(receivePacket.getData(),0,receivePacket.getLength());
         System.out.println("String form: " + received + "\n");
+        }
 	}
 	
 
@@ -195,6 +222,23 @@ public class Client {
 			return true;
 		else 
 			return false;
+	}
+	
+	/*
+	 * returns true if in verbose mode and false if in quiet mode
+	 */
+	public boolean getMode() {
+		return verbose;
+	}
+	
+	/*
+	 * Toggles between quiet mode and verbose mode
+	 */
+	public void toggleMode() {
+		if (verbose)
+			verbose = false;
+		else
+			verbose = true;
 	}
 	
 	/*
@@ -237,6 +281,13 @@ public class Client {
 					System.out.println("Unable to connect to server");
 				}
 				
+			}
+			else if (cmd[0].equals("mode")) {
+				c.toggleMode();
+				if (c.getMode())
+					System.out.println("Client is now in verbose mode");
+				else
+					System.out.println("Client is now in quiet mode");
 			}
 			
 		}
