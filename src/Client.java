@@ -22,6 +22,10 @@ public class Client {
 		
 	}
 	
+	/*
+	 * Establishes a read or write connection with the server
+	 * according to the TFTP protocol
+	 */
 	public void establishConnection(String fileName, String request){
         try {
             // Create a datagram socket for sending and receiving packets
@@ -50,10 +54,12 @@ public class Client {
         connected = true;
 	}
 	
+	/*
+	 * Writes a file to the server
+	 */
 	public void writeFile(String fileName){
 		try {
 			String filePath = System.getProperty("user.dir") + "/clientFiles/" + fileName;
-			System.out.println(filePath);
 			//Make sure file exists
 			File file = new File(filePath);
 			if (!file.exists()) {
@@ -76,7 +82,7 @@ public class Client {
 				}
 				dataPacket = new TftpData(blockNumber, data, nRead);
 				try {
-					sendReceiveSocket.send(dataPacket.generatePacket(InetAddress.getLocalHost(), destinationTID));
+					sendReceiveSocket.send(dataPacket.generatePacket(receivePacket.getAddress(), destinationTID));
 				} catch (IOException e1) {
 		            e1.printStackTrace();
 		            System.exit(1);
@@ -99,6 +105,9 @@ public class Client {
 		
 	}
 	
+	/*
+	 * Reads a file from the server
+	 */
 	public void readFile(String fileName){
 		String filePath = System.getProperty("user.dir") + "/clientFiles/" + fileName;
 		try{
@@ -127,7 +136,7 @@ public class Client {
 	            	// Send acknowledgement packet
 	            	TftpAck ack = new TftpAck(blockNumber++);
 	            	try {
-	            		sendReceiveSocket.send(ack.generatePacket(receivePacket.getAddress(), receivePacket.getPort()));
+	            		sendReceiveSocket.send(ack.generatePacket(receivePacket.getAddress(), destinationTID));
 	            	}catch (IOException e) {
 	                    e.printStackTrace();
 	                    System.exit(1);
@@ -151,6 +160,9 @@ public class Client {
     	}
     }
 	
+	/*
+	 * Waits to receive a packet froim the sendReceiveSocket
+	 */
 	public void receive(){
 		 //Create a DatagramPacket for receiving packets
         byte receive[] = new byte[1024];
@@ -166,7 +178,9 @@ public class Client {
 	}
 	
 
-	
+	/*
+	 * returns true if the client has established a connection to the server
+	 */
 	public boolean isConnected(){
 		if (connected==true)
 			return true;
@@ -174,6 +188,9 @@ public class Client {
 			return false;
 	}
 	
+	/*
+	 * returns the byte array of the data in the tftp data packet
+	 */
     public byte[] extractFromDataPacket(byte[] data, int dataLength){
 		ByteArrayOutputStream stream = new ByteArrayOutputStream();
 		stream.write(data, 4, dataLength-4);

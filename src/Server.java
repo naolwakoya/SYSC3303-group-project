@@ -61,7 +61,6 @@ public class Server {
                     e.printStackTrace();
                     System.exit(1);
                 }
-            	
             	receiveFile();
             }
             // Check if it is a read request
@@ -86,11 +85,15 @@ public class Server {
         sendReceiveSocket.close();
     }
 
-    
+    /*
+     * Receives the file from the client via data packets and 
+     * sends ack packets back to the client
+     */
     public void receiveFile(){
     	try {
-    		String filePath = System.getProperty("user.dir") + "/server/" + fileName;
+    		String filePath = System.getProperty("user.dir") + "/serverFiles/" + fileName;
 			// Check that file does not exist already
+    		System.out.println(filePath);
     		File file = new File(filePath);
 			if (file.exists()) {
 				System.out.println("The file already exists!");
@@ -137,6 +140,9 @@ public class Server {
     	}
     }
     
+    /*
+     * Sends the file to the client via tftp data packets
+     */
     public void sendFile(){
     	try {
 			String filePath = System.getProperty("user.dir") + "/serverFiles/" + fileName;
@@ -185,6 +191,9 @@ public class Server {
 		}
     }
     
+    /*
+     * Waits to receive a packet from the sendReceive socket
+     */
 	public void receive(){
 		 //Create a DatagramPacket for receiving packets
        byte receive[] = new byte[1024];
@@ -208,13 +217,18 @@ public class Server {
        System.out.println("String form: " + received + "\n");
 	}
     
-    
+	/*
+	 * returns the byte array of the data in the tftp data packet
+	 */
     public byte[] extractFromDataPacket(byte[] data, int dataLength){
 		ByteArrayOutputStream stream = new ByteArrayOutputStream();
 		stream.write(data, 4, dataLength-4);
 		return data = stream.toByteArray();
     }
     
+    /*
+     * returns the filename from the request packet
+     */
     public String extractFileName(byte[] data, int dataLength){
     	int i = 1;
     	StringBuilder sb = new StringBuilder();
