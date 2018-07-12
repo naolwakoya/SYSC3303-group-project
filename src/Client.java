@@ -175,6 +175,15 @@ public class Client {
             e.printStackTrace();
             System.exit(1);
         }
+        
+        //Process the received datagram
+        System.out.println("Received packet:");
+        System.out.println("From host: " + receivePacket.getAddress());
+        System.out.println("Host port: " + receivePacket.getPort());
+        System.out.println("Packet length: " + receivePacket.getLength());
+        System.out.println("Containing: " + receivePacket.getData());
+        String received = new String(receivePacket.getData(),0,receivePacket.getLength());
+        System.out.println("String form: " + received + "\n");
 	}
 	
 
