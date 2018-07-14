@@ -7,7 +7,7 @@ import java.net.UnknownHostException;
 
 public class ErrorSimulator {
 
-	public static int DEFAULT_PORT = 69;
+	public static int DEFAULT_PORT = 70;
     DatagramSocket receiveSocket, sendReceiveSocket;
     DatagramPacket receivePacket, sendPacket, sendReceivePacket;
 
