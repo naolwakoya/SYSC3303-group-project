@@ -1,6 +1,3 @@
-package server;
-import Iter02.TftpAck;
-import Iter02.TftpData;
 
 import java.io.*;
 import java.net.DatagramPacket;
