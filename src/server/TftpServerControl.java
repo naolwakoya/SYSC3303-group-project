@@ -1,4 +1,4 @@
-package server;
+
 
 import java.util.Scanner;
 
