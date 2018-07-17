@@ -2,7 +2,7 @@ import java.io.*;
 import java.net.*;
 import java.util.Scanner;
 
-public class Proxy {
+public class Proxy implements Runnable{
 
     //instance variables
     DatagramSocket receiveSocket, sendReceiveSocket;
@@ -99,10 +99,9 @@ public class Proxy {
         return "error";
     }
 
-
     public void forward(){
         //create byte array to hold packet to be received
-        byte[] data = new byte[512];
+        byte[] data = new byte[516];
 
         //create packet to receive data from client
         receivePacket = new DatagramPacket(data, data.length);
@@ -137,7 +136,7 @@ public class Proxy {
                 sendPacket = new DatagramPacket(data, receivePacket.getLength(), InetAddress.getLocalHost(), server1Port);
                 System.out.println("Forwarding packet to server on port " + sendPacket.getPort());
                 sendReceiveSocket.send(sendPacket);
-                System.out.println("Packet forward.");
+                System.out.println("Packet forwarded.");
             }catch(IOException ioe){
                 ioe.printStackTrace();
                 System.exit(1);
@@ -152,6 +151,7 @@ public class Proxy {
                 sendPacket = new DatagramPacket(data, receivePacket.getLength(), InetAddress.getLocalHost(), server1Port);
                 System.out.println("Forwarding packet to server on port " + sendPacket.getPort());
                 sendReceiveSocket.send(sendPacket);
+                System.out.println("Packet forwarded.");
             }catch(IOException ioe){
                 ioe.printStackTrace();
                 System.exit(1);
@@ -182,6 +182,7 @@ public class Proxy {
                 sendPacket = new DatagramPacket(data, receivePacket.getLength(), InetAddress.getLocalHost(), server1Port);
                 System.out.println("Forwardging packet to server on port " + sendPacket.getPort());
                 sendReceiveSocket.send(sendPacket);
+                System.out.println("Packet forwarded");
             }catch(IOException ioe){
                 ioe.printStackTrace();
                 System.exit(1);
@@ -211,38 +212,29 @@ public class Proxy {
                 sendPacket = new DatagramPacket(data, receivePacket.getLength(), InetAddress.getLocalHost(), server1Port);
                 System.out.println("Forwardging packet to server on port " + sendPacket.getPort());
                 sendReceiveSocket.send(sendPacket);
+                System.out.println("Packet forwarded.");
+            }catch(IOException ioe){
+                ioe.printStackTrace();
+                System.exit(1);
+            }
+        }else if(packetType.equals("data") && whatDo == 7){
+            System.out.println("Changing data packets opcode...");
+            data[0] = 9;
+            data[1] = 9;
+            System.out.println("OPCODE changed to: " + data[0] + data[1]);
+            try{
+                sendPacket = new DatagramPacket(data, receivePacket.getLength(), InetAddress.getLocalHost(), server1Port);
+                System.out.println("Forwarding packet to server on port " + sendPacket.getPort());
+                sendReceiveSocket.send(sendPacket);
+                System.out.println("Packet forwarded.");
             }catch(IOException ioe){
                 ioe.printStackTrace();
                 System.exit(1);
             }
         }
 
-        //String fileName = extractFileName(data, data.length);****************************
-        //System.out.println(data[0]);
-        //System.out.println(data[1]);
-        //System.out.println(fileName);
-
-
-        //System.out.println("WhatDo: " + whatDo);
-
 
         try{
-            //create new packet to be sent to server1
-            sendPacket = new DatagramPacket(data, receivePacket.getLength(), InetAddress.getLocalHost(), server1Port);
-
-        }catch(UnknownHostException ue){
-            ue.printStackTrace();
-            System.exit(1);
-        }
-
-
-
-        try{
-        //send datagramPacket to server via sendReceiveSocket
-            System.out.println("Forwarding packet to server on port " + sendPacket.getPort());
-            sendReceiveSocket.send(sendPacket);
-            System.out.println("Packet forwarded.");
-
             System.out.println("\n");
 
             //receive response from server
@@ -273,18 +265,16 @@ public class Proxy {
             sb.append((char)data[i]);
         }
 
-
         return sb.toString();
     }
     public void disconnect(){
         sendReceiveSocket.close();
         receiveSocket.close();
-
     }
 
     public static void main(String[] args){
-        Proxy proxy = new Proxy();
-        proxy.run();
+        Proxy proxy1 = new Proxy();
+        proxy1.run();
 
     }
 
