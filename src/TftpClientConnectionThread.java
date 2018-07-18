@@ -6,74 +6,33 @@ import java.net.InetAddress;
 import java.net.SocketException;
 
 public class TftpClientConnectionThread implements Runnable {
-    DatagramSocket sendReceiveSocket, receiveSocket;
+    DatagramSocket sendReceiveSocket;
     DatagramPacket sendPacket, receivePacket;
     String fileName;
-    private InetAddress address;
-    private int port;
+    boolean isReadRequest;
+    InetAddress destinationAddress;
+    int port;
+    
 
-    public TftpClientConnectionThread(DatagramPacket packet){
+    public TftpClientConnectionThread(DatagramSocket sendReceiveSocket,boolean isReadRequest, String fileName,int port,InetAddress address){
 
-        this.receivePacket = packet;
-        try {
-            //Create a datagram socket for sending packets
-            sendReceiveSocket = new DatagramSocket();
-
-        }
-        catch(SocketException se){
-            se.printStackTrace();
-            System.exit(1);
-        }
+    	this.destinationAddress = address;
+    	this.port = port;
+    	this.isReadRequest = isReadRequest;
+    	this.fileName = fileName;
+        this.sendReceiveSocket = sendReceiveSocket;
     }
 
     @Override
     public void run (){
         System.out.println("its in the RUN");
-        while(!sendReceiveSocket.isClosed()){
-
-
-
-            port = receivePacket.getPort();
-            address = receivePacket.getAddress();
-
-            byte data[]=receivePacket.getData();
-
-            // Check if it is a write request
-
-            if (data[1]==2)
-            {
-                System.out.println("its in the Write");
-                fileName = extractFileName(data,data.length);
-
-                // Send acknowledgement packet
-                TftpAck ack = new TftpAck(0);
-                try {
-                    sendReceiveSocket.send(ack.generatePacket(receivePacket.getAddress(), receivePacket.getPort()));
-                }catch (IOException e) {
-                    e.printStackTrace();
-                    System.exit(1);
-                }
-                receiveFile();
-            }
-            // Check if it is a read request
-            else if (data[1]==1){
-                System.out.println("its in the Read");
-                fileName = extractFileName(data,data.length);
-
-                // Send empty data packet with block number 1
-                TftpData dat = new TftpData(1,null,0);
-                try {
-                    sendReceiveSocket.send(dat.generatePacket(receivePacket.getAddress(), receivePacket.getPort()));
-                }catch (IOException e) {
-                    e.printStackTrace();
-                    System.exit(1);
-                }
-                sendFile();
-            }
-
-        }
+        if (isReadRequest){
+       		sendFile();
+       	}
+       	else{
+       		receiveFile();
+       	}
         //Close the sockets once complete
-        receiveSocket.close();
         sendReceiveSocket.close();
     }
 
@@ -106,7 +65,7 @@ public class TftpClientConnectionThread implements Runnable {
                     // Send acknowledgement packet
                     TftpAck ack = new TftpAck(blockNumber++);
                     try {
-                        sendReceiveSocket.send(ack.generatePacket(receivePacket.getAddress(), receivePacket.getPort()));
+                        sendReceiveSocket.send(ack.generatePacket(destinationAddress, port));
                     }catch (IOException e) {
                         e.printStackTrace();
                         System.exit(1);
@@ -158,7 +117,7 @@ public class TftpClientConnectionThread implements Runnable {
                 }
                 dataPacket = new TftpData(blockNumber, data, nRead);
                 try {
-                    sendReceiveSocket.send(dataPacket.generatePacket(InetAddress.getLocalHost(), receivePacket.getPort()));
+                    sendReceiveSocket.send(dataPacket.generatePacket(destinationAddress, port));
                 } catch (IOException e1) {
                     e1.printStackTrace();
                     System.exit(1);
@@ -214,16 +173,5 @@ public class TftpClientConnectionThread implements Runnable {
         return data = stream.toByteArray();
     }
 
-    /*
-     * returns the filename from the request packet
-     */
-    public String extractFileName(byte[] data, int dataLength){
-        int i = 1;
-        StringBuilder sb = new StringBuilder();
-        while(data[++i] != 0 && i < dataLength){
-            sb.append((char)data[i]);
-        }
-        return sb.toString();
-    }
 
 }

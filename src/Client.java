@@ -12,10 +12,6 @@ import java.net.*;
 import java.util.Arrays;
 import java.util.Scanner;
 
-//import test.ErrorChecker;
-
-
-
 
 public class Client {
 
@@ -25,26 +21,10 @@ public class Client {
     DatagramSocket sendReceiveSocket;
     static DatagramPacket receivePacket;
 	DatagramPacket sendPacket;
-    private static Scanner input;
-    public static final String fileDirectory = "files\\client\\";
-	String filename = "something.txt";
-    //ErrorChecker errorChecker1 = null;
     String mode = "octet";
+    String filePath = System.getProperty("user.dir") + "/clientFiles/";
     boolean connected = false;
     boolean verbose = true;
-    //ErrorChecker errorChecker = null;
-
-    public enum Opcode {
-		RRQ ((byte)1), WRQ ((byte)2), DATA ((byte)3), ACK ((byte)4), ERROR ((byte)5);
-
-		Opcode (byte op) {
-		}
-
-		public Object op() {
-			// TODO Auto-generated method stub
-			return null;
-		}
-	}
 
 
 	public Client() {
@@ -57,14 +37,7 @@ public class Client {
 		}
 	}
 
-
-
-
-
-
 	 // Establishes a read or write connection with the server according to the TFTP protocol
-
-
 	public void establishConnection(String fileName, String request){
         try {
 
@@ -102,143 +75,6 @@ public class Client {
         destinationinationTID = receivePacket.getPort();
         System.out.println("Connected to server");
         connected = true;
-	}
-
-	public void userInterface() {
-		// determine if user wants to send a read request or a write request
-		Opcode op;	// the user's choice of request to send
-		input = new Scanner(System.in);		// scans user input
-		while (true) {
-			System.out.println("\nWould you like to make a (R)ead Request, (W)rite Request, or (Q)userInterfacet?");
-			String choice = input.nextLine();	// user's choice
-			if (choice.equalsIgnoreCase("R")) {			// read request
-				op = Opcode.RRQ;
-				System.out.println("\nClient: You have chosen to send a read request.");
-				break;
-			} else if (choice.equalsIgnoreCase("W")) {	// write request
-				op = Opcode.WRQ;
-				System.out.println("\nClient: You have chosen to send a write request.");
-				break;
-			} else if (choice.equalsIgnoreCase("Q")) {	// quserInterfacet
-				System.out.println("\nGoodbye!");
-				System.exit(0);
-			} else {
-				System.out.println("\nI'm sorry, that is not a valid choice.  Please try again...");
-			}
-		}
-
-		// determines where the user wants to send the request
-		int destination; // the port destinationination of the user's request
-		while (true) {
-			System.out.println("Where would you like to send your request: ");
-
-
-			String choice = input.nextLine();	// user's choice
-			if (choice.equalsIgnoreCase("S")) {			// request to Server
-				destination = 69;
-				System.out.println("\nClient: You have chosen to send your request to the Server.");
-				break;
-			} else if (choice.equalsIgnoreCase("E")) {	// request to Error Simulator
-				destination = 68;
-				System.out.println("\nClient: You have chosen to send your request to the Error Simulator.");
-				break;
-			} else if (choice.equalsIgnoreCase("Q")) {	//
-				System.out.println("\nGoodbye!");
-				System.exit(0);
-			} else {
-				System.out.println("\nI'm sorry, that is not a valid choice.  Please try again");
-			}
-		}
-
-		// determine which file the user wants to modify
-		while(true) {
-			System.out.println("Please choose a file to modify. Type in a file name: /n");
-			filename = input.nextLine();	// user's choice
-
-			// deal with user's choice of request
-			if (op == Opcode.RRQ) {
-				if (!(Files.exists(Paths.get(fileDirectory + filename)))) {	// file does not exist
-					System.out.println("\nClient: You have chosen the file: " + filename +
-							", to be received in " + mode + " mode.");
-					break;
-				} else{														// file already exists
-					System.out.println("\nClient: I'm sorry, " + fileDirectory + filename + " already exists:");
-					while(true) {
-						System.out.println("(T)ry another file, or (Q)userInterfacet: ");
-						String choice = input.nextLine();	// user's choice
-						if (choice.equalsIgnoreCase("Q")) {			// quserInterfacet
-							System.out.println("\nGoodbye!");
-							System.exit(0);
-						} else if (choice.equalsIgnoreCase("T")) {	// try another file
-							break;
-						} else {									// invalid choice
-							System.out.println("\nI'm sorry, that is not a valid choice.  Please try again...");
-						}
-					}
-				}
-			} else if (op == Opcode.WRQ) {
-				if (Files.isWritable(Paths.get(fileDirectory + filename))) {
-					System.out.println("\nClient: You have chosen the file: " + fileDirectory + filename + ", to be sent in " +
-							mode + " mode.");
-					break;
-				} else {														// file does not exist
-					System.out.println("\nClient: I'm sorry, " + fileDirectory + filename + " does not exist:");
-					while(true) {
-						System.out.println("(T)ry another file, or (Q)userInterfacet: ");
-						String choice = input.nextLine();	// user's choice
-						if (choice.equalsIgnoreCase("Q")) {			// quserInterfacet
-							System.out.println("\nGoodbye!");
-							System.exit(0);
-						} else if (choice.equalsIgnoreCase("T")) {	// try another file
-							break;
-						} else {									// invalid choice
-							System.out.println("\nI'm sorry, that is not a valid choice.  Please try again...");
-						}
-					}
-				}
-			}
-		}
-
-		byte[] request = createRequest(op.op(), filename, mode);	// get the request byte[] to send
-
-
-		try{
-			send(request, InetAddress.getLocalHost(), destination);
-		} catch (UnknownHostException e) {
-			System.out.println("\nClient: Error, InetAddress could not be found. Shutting Down...");
-			System.exit(1);
-		}
-	}
-
-	public static byte[] createRequest(Object object, String filename, String mode) {
-		byte data[]=new byte[filename.length() + mode.length() + 4];
-		Thread thread;
-
-		// request opcode
-		data[0] = 0;
-		data[1] = (byte) object;
-
-
-		// convert filename and mode to byte[], with proper encoding
-		byte[] fn = null;	// filename
-		byte[] md = null;	// mode
-		try {
-			fn = filename.getBytes("US-ASCII");
-			md = mode.getBytes("US-ASCII");
-		} catch (UnsupportedEncodingException e) {
-			e.printStackTrace();
-		}
-
-		// add filename and mode to request
-		data[fn.length + 3] = 0;
-		System.arraycopy(fn,0,data,2,fn.length);
-		System.arraycopy(md,0,data,fn.length+3,md.length);
-		data[data.length-1] = 0;
-
-		thread = new Thread(new TftpClientConnectionThread(receivePacket));
-        thread.start();
-
-		return data;
 	}
 
 	/*
@@ -320,7 +156,7 @@ public class Client {
 					this.receive();
 
 					if (file.canWrite()){
-						fileData = extractFromDataPacket(receivePacket.getData(), receivePacket.getLength());
+						fileData = parseData(receivePacket.getData(), receivePacket.getLength());
 						outputStream.write(fileData);
 						outputStream.getFD().sync();
 					} else{
@@ -363,7 +199,7 @@ public class Client {
     }
 
 	/*
-	 * Waits to receive a packet froim the sendReceiveSocket
+	 * Waits to receive a packet from the sendReceiveSocket
 	 */
 	public DatagramPacket receive(){
 		 //Create a DatagramPacket for receiving packets
@@ -383,8 +219,6 @@ public class Client {
         System.out.println("Received packet:");
         printPacketInformation(receivePacket);
         }
-        thread = new Thread(new TftpClientConnectionThread(receivePacket));
-        thread.start();
 		return receivePacket;
 	}
 
@@ -402,91 +236,12 @@ public class Client {
 	}
 
 
-	public void send (byte[] data, InetAddress addr, int port) {
-		sendPacket = new DatagramPacket(data, data.length, addr, port);
-
-		System.out.println("\nClient: Sending packet:");
-		System.out.println("To host: " + sendPacket.getAddress() + " : " + sendPacket.getPort());
-		System.out.print("Containing " + sendPacket.getLength() + " bytes: \n");
-		System.out.println(Arrays.toString(data) + "\n");
-
-		// send the DatagramPacket to the server via the send/receive socket
-		try {
-			sendReceiveSocket.send(sendPacket);
-			System.out.println("Client: Packet sent");
-		} catch (IOException e) {
-			e.printStackTrace();
-			System.exit(1);
-		}
-	}
-
-
-
-
-
-
 	public boolean isConnected(){
 		if (connected==true)
 			return true;
 		else
 			return false;
 	}
-
-
-
-	public class TftpAck extends TftpPacket{
-
-		int blockNumber = 0;
-
-		public TftpAck(int blockNumber){
-			this.blockNumber = blockNumber;
-		}
-
-		public int getBlockNumber(){
-			return blockNumber;
-		}
-
-		@Override
-		public byte[] generateData() {
-			byte[] data = new byte[4];
-			data[0] = 0;
-			data[1] = (byte) 4;
-			data[2] = (byte) (blockNumber >> 8);
-			data[3] = (byte) (blockNumber);
-			return data;
-		}
-
-	}
-
-
-
-
-
-	// TODO Auto-generated method stub
-
-
-
-
-
-/*
-
-	private byte[] createData(byte blockNumber, byte[] fileData) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-
-
-
-
-	private byte[] processDatagram(DatagramPacket datagram) {
-		return null;
-	}
-	*/
-
-
-
-
 
 	/*
 	 * returns true if in verbose mode and false if in quserInterfaceet mode
@@ -505,52 +260,10 @@ public class Client {
 			verbose = true;
 	}
 
-	public byte[] createError (byte errorCode, String errorMsg) {
-		byte[] error = new byte[4 + errorMsg.length() + 1];	// new error to eventually be sent to server
-
-		// add opcode
-		error[0] = 0;
-		error[1] = 5;
-
-		// add error code
-		error[2] = 0;
-		error[3] = errorCode;
-
-		byte[] message = new byte[errorMsg.length()];	// new array for errorMsg, to be joined with codes
-
-		// convert errorMsg to byte[], with proper encoding
-		try {
-			message = errorMsg.getBytes("US-ASCII");
-		} catch (UnsupportedEncodingException e) {
-			e.printStackTrace();
-		}
-
-		// add error message to error byte[]
-		System.arraycopy(message, 0, error, 4, message.length);
-		error[error.length-1] = 0;	// make last element a 0 byte, according to TFTP
-
-		return error; //return full error message with opcodes and type of error
-	}
-
 	public void parseAck (byte[] ack) {
 		System.out.println("\nClient: Recieved packet is ACK: ");
 		System.out.println("Block#: " + ack[2] + ack[3]);
 	}
-
-	public byte[] parseData (byte[] data) {
-		// byte[] for the data portion of DATA packet byte[]
-		byte[] justData = new byte[data.length - 4];
-		System.arraycopy(data, 4, justData, 0, data.length-4);
-
-		// print info to user
-		System.out.println("\nClient: Recieved packet is DATA: ");
-		System.out.println("Block#: " + data[2] + data[3] + ", and containing data: ");
-		System.out.println(Arrays.toString(justData));
-
-		return justData;
-	}
-
-
 
 	public void parseError (byte[] error) {
 		System.out.println("\nClient: Recieved packet is ERROR: ");
@@ -588,7 +301,7 @@ public class Client {
 	/*
 	 * returns the byte array of the data in the tftp data packet
 	 */
-    public byte[] extractFromDataPacket(byte[] data, int dataLength){
+    public byte[] parseData(byte[] data, int dataLength){
 		ByteArrayOutputStream stream = new ByteArrayOutputStream();
 		stream.write(data, 4, dataLength-4);
 		return data = stream.toByteArray();
@@ -601,14 +314,18 @@ public class Client {
 		String input;
 
 		while (true){
-			System.out.println("Enter a command:");
+			System.out.println("Enter a command (For list of commands type 'help'):");
 			input = s.nextLine().toLowerCase();
 			String[] cmd = input.split("\\s+");
 
 			if (cmd.length==0){
 				continue;
 			}
-			else if (cmd[0].equals("stop")){
+			if (cmd[0].equals("help")){
+				printHelpCommand();
+			}
+			else if (cmd[0].equals("quit")){
+				System.out.println("Client is shutting down");
 				s.close();
 				return;
 			}
@@ -634,10 +351,30 @@ public class Client {
 				else
 					System.out.println("Client is now in quserInterfaceet mode");
 			}
-			//c.connection();
+			else if (cmd[0].equals("dir")){
+				System.out.println("The current directory is: " + c.getDirectory());
+			}
+			else{
+				System.out.println("Invalid command: The available commands are:");
+				printHelpCommand();
+			}
 
 		}
 
+	}
+	
+
+	private static void printHelpCommand() {
+		System.out.println("read filename - read file from server");
+		System.out.println("write filename - write file to server");
+		System.out.println("quit - stops the client");
+		System.out.println("mode - Toggles between quiet and verbose mode");
+		System.out.println("dir - prints the current directory for file transfers");
+		
+	}
+	
+	public String getDirectory(){
+		return filePath;
 	}
 
 
