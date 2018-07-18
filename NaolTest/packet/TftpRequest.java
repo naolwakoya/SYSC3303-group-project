@@ -1,5 +1,0 @@
-package packet;
-
-class TftpRequest {
-
-}

@@ -1,5 +1,0 @@
-package Types;
-
-class InstanceType {
-
-}

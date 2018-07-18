@@ -19,7 +19,7 @@ import java.util.Scanner;
 
 public class Client {
 
-	static int REQUEST_PORT = 8080;
+	static int REQUEST_PORT = 69;
 	int sourceTID, destinationinationTID;
 
     DatagramSocket sendReceiveSocket;
