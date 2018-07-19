@@ -2,7 +2,7 @@ import java.io.*;
 import java.net.*;
 import java.util.Scanner;
 
-public class Proxy implements Runnable{
+public class Proxy {
 
     //instance variables
     DatagramSocket receiveSocket, sendReceiveSocket;
@@ -255,7 +255,7 @@ public class Proxy implements Runnable{
             e.printStackTrace();
             System.exit(1);
         }
-
+        actionPerformed = false;
     }
 
     public String extractFileName(byte[] data, int dataLength){
