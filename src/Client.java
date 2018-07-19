@@ -356,9 +356,12 @@ public class Client {
 			else if (cmd[0].equals("test")) {
 				c.toggleTest();
 				if (c.getTest())
-					System.out.println("Client is now in normal mode");
-				else
 					System.out.println("Client is now in test mode");
+				else
+					System.out.println("Client is now in normal mode");
+			}
+			else if (cmd[0].equals("port")) {
+				System.out.println("The destination port is: " + c.REQUEST_PORT);
 			}
 			else{
 				System.out.println("Invalid command: The available commands are:");
