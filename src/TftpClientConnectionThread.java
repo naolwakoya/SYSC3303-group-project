@@ -210,7 +210,4 @@ public class TftpClientConnectionThread implements Runnable {
         }
         return sb.toString();
     }
-    
-
-
 }

@@ -93,7 +93,7 @@ public class Client {
 
 			int blockNumber = 1;
 			int nRead=0;
-			byte[] data = new byte [500];
+			byte[] data = new byte [512];
 			TftpData dataPacket;
 
 			do {
@@ -121,7 +121,7 @@ public class Client {
 		       blockNumber++;
 
 
-			} while (nRead == 500);
+			} while (nRead == 512);
 
 			inputStream.close();
 
