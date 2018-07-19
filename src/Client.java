@@ -15,7 +15,7 @@ import java.util.Scanner;
 
 public class Client {
 
-	static int REQUEST_PORT = 69;
+	int REQUEST_PORT = 69;
 	int sourceTID, destinationinationTID;
 
     DatagramSocket sendReceiveSocket;
@@ -25,6 +25,7 @@ public class Client {
     String filePath = System.getProperty("user.dir") + "/clientFiles/";
     boolean connected = false;
     boolean verbose = true;
+    boolean test = false;
 
 
 	public Client() {
@@ -205,7 +206,6 @@ public class Client {
 		 //Create a DatagramPacket for receiving packets
         byte receive[] = new byte[1024];
         receivePacket = new DatagramPacket(receive, receive.length);
-        Thread thread;
 
         try {
             // Block until a datagram is received via sendReceiveSocket.
@@ -349,10 +349,17 @@ public class Client {
 				if (c.getMode())
 					System.out.println("Client is now in verbose mode");
 				else
-					System.out.println("Client is now in quserInterfaceet mode");
+					System.out.println("Client is now in quiet mode");
 			}
 			else if (cmd[0].equals("dir")){
 				System.out.println("The current directory is: " + c.getDirectory());
+			}
+			else if (cmd[0].equals("test")) {
+				c.toggleTest();
+				if (c.getTest())
+					System.out.println("Client is now in normal mode");
+				else
+					System.out.println("Client is now in test mode");
 			}
 			else{
 				System.out.println("Invalid command: The available commands are:");
@@ -370,7 +377,23 @@ public class Client {
 		System.out.println("quit - stops the client");
 		System.out.println("mode - Toggles between quiet and verbose mode");
 		System.out.println("dir - prints the current directory for file transfers");
+		System.out.println("test - Toggles between normal and test mode");
 		
+	}
+	
+	public void toggleTest() {
+		if (test) {
+			test = false;
+			REQUEST_PORT = 69;
+		}
+		else  {
+			test = true;
+			REQUEST_PORT = 23;
+		}
+	}
+	
+	public boolean getTest() {
+		return test;
 	}
 	
 	public String getDirectory(){
