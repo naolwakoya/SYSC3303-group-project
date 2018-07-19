@@ -30,5 +30,11 @@ public class TftpData extends TftpPacket{
 		d.write(data, 0, dataLength);
 		return d.toByteArray();
 	}
+	
+	public boolean validateData(byte[] rData) {
+		
+		return true;
+		
+	}
 
 }

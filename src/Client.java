@@ -70,10 +70,6 @@ public class Client {
             System.exit(1);
         }
 
-
-        this.receive();
-
-        destinationinationTID = receivePacket.getPort();
         System.out.println("Connected to server");
         connected = true;
 	}
@@ -83,6 +79,8 @@ public class Client {
 	 */
 	public void writeFile(String fileName){
 		try {
+	        this.receive();
+	        destinationinationTID = receivePacket.getPort();
 			String filePath = System.getProperty("user.dir") + "/clientFiles/" + fileName;
 			//Make sure file exists
 			File file = new File(filePath);
@@ -154,8 +152,9 @@ public class Client {
 
 			do {
 				try{
-					this.receive();
-
+			        this.receive();
+			        destinationinationTID = receivePacket.getPort();
+					
 					if (file.canWrite()){
 						fileData = parseData(receivePacket.getData(), receivePacket.getLength());
 						outputStream.write(fileData);
@@ -180,14 +179,14 @@ public class Client {
 	                    e.printStackTrace();
 	                    System.exit(1);
 	                }
-
+	            
 				}
 				catch (SyncFailedException e){
 					outputStream.close();
 					file.delete();
 					return;
 				}
-			} while (!(fileData.length<500));
+			} while (!(fileData.length<512));
 
 			outputStream.close();
     	}

@@ -33,28 +33,10 @@ public class TftpClientConnectionThread implements Runnable {
         System.out.println("its in the RUN");
         if (isReadRequest){
         	fileName = extractFileName(receivePacket.getData(),receivePacket.getData().length);
-
-            // Send empty data packet with block number 1
-            TftpData dat = new TftpData(1,null,0);
-            try {
-                sendReceiveSocket.send(dat.generatePacket(destinationAddress, port));
-            }catch (IOException e) {
-                e.printStackTrace();
-                System.exit(1);
-            }
        		sendFile();
         }
        	else{
             fileName = extractFileName(receivePacket.getData(), receivePacket.getData().length);
-
-            // Send acknowledgement packet
-            TftpAck ack = new TftpAck(0);
-            try {
-                sendReceiveSocket.send(ack.generatePacket(destinationAddress, port));
-            }catch (IOException e) {
-                e.printStackTrace();
-                System.exit(1);
-            }
        		receiveFile();
        	}
         //Close the sockets once complete
@@ -64,6 +46,15 @@ public class TftpClientConnectionThread implements Runnable {
 
     public void receiveFile(){
         try {
+            // Send acknowledgement packet
+            TftpAck ack = new TftpAck(0);
+            try {
+                sendReceiveSocket.send(ack.generatePacket(destinationAddress, port));
+            }catch (IOException e) {
+                e.printStackTrace();
+                System.exit(1);
+            }
+        	
             String filePath = System.getProperty("user.dir") + "/serverFiles/" + fileName;
             // Check that file does not exist already
             System.out.println(filePath);
@@ -88,7 +79,7 @@ public class TftpClientConnectionThread implements Runnable {
                         return;
                     }
                     // Send acknowledgement packet
-                    TftpAck ack = new TftpAck(blockNumber++);
+                    ack = new TftpAck(blockNumber++);
                     try {
                         sendReceiveSocket.send(ack.generatePacket(destinationAddress, port));
                     }catch (IOException e) {
