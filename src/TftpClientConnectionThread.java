@@ -117,6 +117,16 @@ public class TftpClientConnectionThread implements Runnable {
                 System.out.println("Cannot find file: " + fileName);
                 return;
             }
+            if (!file.isAbsolute()) {
+            	try {
+            		TftpError error = new TftpError(2, "Cant access file in folder");
+            		sendReceiveSocket.send(error.generatePacket(destinationAddress, port));
+                	return;
+            	}
+            	catch (IOException e1){
+            		e1.printStackTrace();
+            	}
+            }
 
             FileInputStream inputStream = new FileInputStream(file);
 

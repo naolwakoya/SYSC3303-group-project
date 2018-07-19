@@ -380,7 +380,7 @@ public class Client {
 		System.out.println("mode - Toggles between quiet and verbose mode");
 		System.out.println("dir - prints the current directory for file transfers");
 		System.out.println("test - Toggles between normal and test mode");
-		
+		System.out.println("port - Outputs the destination port");
 	}
 	
 	public void toggleTest() {
