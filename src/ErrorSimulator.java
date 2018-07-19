@@ -1,219 +1,282 @@
-import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.SocketException;
-import java.net.UnknownHostException;
+import java.io.*;
+import java.net.*;
+import java.util.Scanner;
 
-public class ErrorSimulator {
+public class ErrorSimulator implements Runnable{
 
-	public static int DEFAULT_PORT = 70;
+    //instance variables
     DatagramSocket receiveSocket, sendReceiveSocket;
-    DatagramPacket receivePacket, sendPacket, sendReceivePacket;
+    DatagramPacket receivePacket, sendPacket;
 
+    boolean isConnected = false;
+
+    InetAddress clientAddress;
+    int clientPort;
+
+    int proxyPort = 23;
+    int server1Port = 69;
+
+    boolean actionPerformed = false;
+
+    Scanner input;
+
+    //constructor
     public ErrorSimulator(){
-        try {
-            // Creates a datagram socket for sending and receiving packets
-            sendReceiveSocket = new DatagramSocket();
+    }
 
-            // Creates a datagram socket and binds it to port 20 for receiving packets
-            receiveSocket = new DatagramSocket(23);
-        }
-        catch(SocketException se){
-            se.printStackTrace();;
+    public void connect(){
+        //scanner to receive user input from prompts
+        input = new Scanner(System.in);
+
+        //create new datagram sockets for the client and server
+        try{
+            receiveSocket = new DatagramSocket(proxyPort, InetAddress.getLocalHost());
+            System.out.println("Connected to client on port: " + receiveSocket.getLocalPort());
+            sendReceiveSocket = new DatagramSocket();
+        }catch(IOException se){
+            se.printStackTrace();
             System.exit(1);
+        }
+        isConnected = true;
+    }
+    public void run(){
+        if(isConnected == false){
+            connect();
+        }
+        while(true){
+            forward();
         }
     }
 
-    public void run () {
-        boolean running = true;
+    //asks the user what type of operation to perform
+    public int getOperation(){
+        int response = 9;
+        System.out.println("What would you like corrupt?");
+        System.out.println("(0): normal operation");
+        System.out.println("(1): request packets");
+        System.out.println("(2): data packets");
+        System.out.println("(3): ack packets");
 
-        while (running) {
-            // Construct a DatagramPacket for receiving packets up
-            byte data[] = new byte[1024];
-            receivePacket = new DatagramPacket(data, data.length);
+        response = input.nextInt();
 
-            // Block until a datagram packet is received from receiveSocket.
-            try {
-                System.out.println("Waiting...");
-                receiveSocket.receive(receivePacket);
-            } catch (IOException e) {
-                e.printStackTrace();
+        System.out.println("\n");
+
+        if(response == 0){
+            //do nothing
+            System.out.println("(0): Confirm do nothing");
+        }else if(response == 1){
+            System.out.println("(1)Request packets chosen.");
+            System.out.println("What would you like to do to the request packets?");
+            System.out.println("(4): change opcode");
+            System.out.println("(5): change fileName");
+            System.out.println("(6): change mode");
+        }else if(response == 2){
+            System.out.println("(2)Data Packets chosen.");
+            System.out.println("What would you like to do to the Data packets?");
+            System.out.println("(7): change opcode");
+            System.out.println("(8): change block number");
+        }else if(response == 3){
+            System.out.println("(3)Acknowledgement Packets chosen.");
+            System.out.println("What would you like to do to the Ack packets?");
+            System.out.println("(9):  change opcode");
+            System.out.println("(10): change block number");
+        }
+
+        response = input.nextInt();
+
+        return response;
+    }
+
+    //method to return the type of packet received
+    public String getPacketType(byte[] data){
+        if(data[1] == 1 || data[1] == 2){
+            return "request";
+        }else if(data[1] == 3){
+            return "data";
+        }else if(data[1] == 4){
+            return "ack";
+        }
+        return "error";
+    }
+
+    public void forward(){
+        //create byte array to hold packet to be received
+        byte[] data = new byte[516];
+
+        //create packet to receive data from client
+        receivePacket = new DatagramPacket(data, data.length);
+
+        try{
+            //receive packet from client
+            //receive() method blocks until datagram is received, data is now populated with recievd packet
+            System.out.println("Receiving...");
+            receiveSocket.receive(receivePacket);
+            clientAddress = receivePacket.getAddress();
+            clientPort = receivePacket.getPort();
+            System.out.println("Packet received from client");
+        }catch(IOException e){
+            e.printStackTrace();
+            System.exit(1);
+        }
+
+        System.out.println("\n");
+
+        String packetType = "";
+        int whatDo = 0; //default action (do nothing)
+        while(actionPerformed == false){
+
+            packetType = getPacketType(data);
+            whatDo = getOperation();
+            actionPerformed = true;
+        }
+        if(whatDo == 0){
+            //no nothing, simply forward packet thats been received
+            System.out.println("Forwarding packet without altering it");
+            try{
+                sendPacket = new DatagramPacket(data, receivePacket.getLength(), InetAddress.getLocalHost(), server1Port);
+                System.out.println("Forwarding packet to server on port " + sendPacket.getPort());
+                sendReceiveSocket.send(sendPacket);
+                System.out.println("Packet forwarded.");
+            }catch(IOException ioe){
+                ioe.printStackTrace();
                 System.exit(1);
             }
+        }else if(packetType.equals("request") && whatDo == 4){
+            //takes the request packets and alters the opcode to an invalid opcode
+            System.out.println("Altering opcode of request packet...");
+            data[0] = 9;
+            data[1] = 9;
+            System.out.println("OPCODE changed to: " + data[0] + data[1]);
+            try{
+                sendPacket = new DatagramPacket(data, receivePacket.getLength(), InetAddress.getLocalHost(), server1Port);
+                System.out.println("Forwarding packet to server on port " + sendPacket.getPort());
+                sendReceiveSocket.send(sendPacket);
+                System.out.println("Packet forwarded.");
+            }catch(IOException ioe){
+                ioe.printStackTrace();
+                System.exit(1);
+            }
+        }else if(packetType.equals("request") && whatDo == 5 ){
+            //takes the request packet and alters the filename
+            System.out.println("Altering filename of request packet...");
+            String fileName = extractFileName(data,data.length);
+            System.out.println("Original filename: " + fileName);
+            System.out.println("Changing fileName to: randomFileName");
 
-            // Process the received datagram.
-            System.out.println("Proxy: Packet received:");
-            System.out.println("From host: " + receivePacket.getAddress());
-            System.out.println("Host port: " + receivePacket.getPort());
-            System.out.println("Packet length: " + receivePacket.getLength());
-            System.out.println("Containing: " + receivePacket.getData());
-            // Form a String from the byte array.
-            String received = new String(receivePacket.getData(), 0, receivePacket.getLength());
-            System.out.println("String form: " + received + "\n");
+            //create new byteArray with different fileName
+            fileName = " randomFileName";
+            String mode = "ascii";
+            ByteArrayOutputStream request = new ByteArrayOutputStream();
+            //hardcode request bytearraystream to be later converted to byte array
+            request.write(data[0]);
+            request.write(data[1]);
+            request.write(fileName.getBytes(),0,fileName.getBytes().length);
+            request.write(0);
+            request.write(mode.getBytes(), 0, mode.getBytes().length);
+            request.write(0);
 
-            // Check to see if the packet is a read or write request
-            if (data[1]==2 || data[1]==1){
-	            // Create a new datagram packet containing the string received from the client
-	            try {
-	                sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(),
-	                        InetAddress.getLocalHost(), DEFAULT_PORT);
-	            } catch (UnknownHostException e) {
-	                e.printStackTrace();
-	                System.exit(1);
-	            }
-	
-	            // Output the packet information
-	            System.out.println("Proxy: Sending packet:");
-	            System.out.println("To host: " + sendPacket.getAddress());
-	            System.out.println("Destination host port: " + sendPacket.getPort());
-	            System.out.println("Packet length: " + sendPacket.getLength());
-	            System.out.println("Containing: " + sendPacket.getData());
-	            System.out.println("String form: " + new String(sendPacket.getData(), 0, sendPacket.getLength()));
-	
-	            // Send the datagram packet to the server via the sendReceive socket
-	            try {
-	                sendReceiveSocket.send(sendPacket);
-	            } catch (IOException e) {
-	                e.printStackTrace();
-	                System.exit(1);
-	            }
-	            System.out.println("Proxy: packet sent" + "\n");
-	
-	            // Create a DatagramPacket for receiving the response from the server
-	            byte response[] = new byte[100];
-	            sendReceivePacket = new DatagramPacket(response, response.length);
-	
-	            //Block until the datagram packet is received from the sendReceiveSocket
-	            try {
-	                System.out.println("Waiting for response..."); // so we know we're waiting
-	                sendReceiveSocket.receive(sendReceivePacket);
-	            } catch (IOException e) {
-	                System.out.print("IO Exception: likely:");
-	                System.out.println("Receive Socket Timed Out.\n" + e);
-	                e.printStackTrace();
-	                System.exit(1);
-	            }
-	
-	            //Process the received response datagram
-	            System.out.println("Proxy: Packet response received:");
-	            System.out.println("From host: " + sendReceivePacket.getAddress());
-	            System.out.println("Host port: " + sendReceivePacket.getPort());
-	            System.out.println("Packet length: " + sendReceivePacket.getLength());
-	            System.out.println("Containing: " +  sendReceivePacket.getData());
-	            // Form a String from the byte array.
-	            received = new String(sendReceivePacket.getData(),0,sendReceivePacket.getLength());
-	            System.out.println("String form: " + received + "\n");
-	
-	            //Form a new packet to send back to the client
-	            sendPacket = new DatagramPacket(sendReceivePacket.getData(), sendReceivePacket.getLength(),
-	                    receivePacket.getAddress(), receivePacket.getPort());
-	
-	
-	            //Output all the information about the packet
-	            System.out.println( "Proxy: Sending packet:");
-	            System.out.println("To host: " + sendPacket.getAddress());
-	            System.out.println("Destination host port: " + sendPacket.getPort());
-	            System.out.println("Packet length: " + sendPacket.getLength());
-	            System.out.println("Containing: " + sendPacket.getData());
-	            System.out.println("String form: " + new String(sendPacket.getData(),0,sendPacket.getLength()));
-	
-	            // Send the datagram packet to the client via the send socket.
-	            try {
-	                sendReceiveSocket.send(sendPacket);
-	            } catch (IOException e) {
-	                e.printStackTrace();
-	                System.exit(1);
-	            }
-	
-	            System.out.println("Proxy: packet sent" + "\n");
-	        }
-            else {
-	            // Create a new datagram packet containing the string received from the client
-	            try {
-	                sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(),
-	                        InetAddress.getLocalHost(), sendReceivePacket.getPort());
-	            } catch (UnknownHostException e) {
-	                e.printStackTrace();
-	                System.exit(1);
-	            }
-	
-	            // Output the packet information
-	            System.out.println("Proxy: Sending packet:");
-	            System.out.println("To host: " + sendPacket.getAddress());
-	            System.out.println("Destination host port: " + sendPacket.getPort());
-	            System.out.println("Packet length: " + sendPacket.getLength());
-	            System.out.println("Containing: " + sendPacket.getData());
-	            System.out.println("String form: " + new String(sendPacket.getData(), 0, sendPacket.getLength()));
-	
-	            // Send the datagram packet to the server via the sendReceive socket
-	            try {
-	                sendReceiveSocket.send(sendPacket);
-	            } catch (IOException e) {
-	                e.printStackTrace();
-	                System.exit(1);
-	            }
-	            System.out.println("Proxy: packet sent" + "\n");
-	
-	            // Create a DatagramPacket for receiving the response from the server
-	            byte response[] = new byte[100];
-	            sendReceivePacket = new DatagramPacket(response, response.length);
-	
-	            //Block until the datagram packet is received from the sendReceiveSocket
-	            try {
-	                System.out.println("Waiting for response..."); // so we know we're waiting
-	                sendReceiveSocket.receive(sendReceivePacket);
-	            } catch (IOException e) {
-	                System.out.print("IO Exception: likely:");
-	                System.out.println("Receive Socket Timed Out.\n" + e);
-	                e.printStackTrace();
-	                System.exit(1);
-	            }
-	
-	            //Process the received response datagram
-	            System.out.println("Proxy: Packet response received:");
-	            System.out.println("From host: " + sendReceivePacket.getAddress());
-	            System.out.println("Host port: " + sendReceivePacket.getPort());
-	            System.out.println("Packet length: " + sendReceivePacket.getLength());
-	            System.out.println("Containing: " +  sendReceivePacket.getData());
-	            // Form a String from the byte array.
-	            received = new String(sendReceivePacket.getData(),0,sendReceivePacket.getLength());
-	            System.out.println("String form: " + received + "\n");
-	
-	            //Form a new packet to send back to the client
-	            sendPacket = new DatagramPacket(sendReceivePacket.getData(), sendReceivePacket.getLength(),
-	                    receivePacket.getAddress(), receivePacket.getPort());
-	
-	
-	            //Output all the information about the packet
-	            System.out.println( "Proxy: Sending packet:");
-	            System.out.println("To host: " + sendPacket.getAddress());
-	            System.out.println("Destination host port: " + sendPacket.getPort());
-	            System.out.println("Packet length: " + sendPacket.getLength());
-	            System.out.println("Containing: " + sendPacket.getData());
-	            System.out.println("String form: " + new String(sendPacket.getData(),0,sendPacket.getLength()));
-	
-	            // Send the datagram packet to the client via the send socket.
-	            try {
-	                sendReceiveSocket.send(sendPacket);
-	            } catch (IOException e) {
-	                e.printStackTrace();
-	                System.exit(1);
-	            }
-	
-	            System.out.println("Proxy: packet sent" + "\n");   
+            byte[] msg = request.toByteArray();
+
+            //put byteArray into packet and forward to server
+            try{
+                sendPacket = new DatagramPacket(data, receivePacket.getLength(), InetAddress.getLocalHost(), server1Port);
+                System.out.println("Forwardging packet to server on port " + sendPacket.getPort());
+                sendReceiveSocket.send(sendPacket);
+                System.out.println("Packet forwarded");
+            }catch(IOException ioe){
+                ioe.printStackTrace();
+                System.exit(1);
+            }
+        }else if(packetType.equals("request") && whatDo == 6 ){
+            System.out.println("option to change request packet's mode has been chosen");
+            //takes the request packet and alters the filename
+            System.out.println("Altering mode of request packet...");
+            System.out.println("Changing mode to: randomMode");
+
+            //create new byteArray with different fileName
+            String fileName = extractFileName(data, data.length);
+            String mode = "ascii";
+            ByteArrayOutputStream request = new ByteArrayOutputStream();
+            //hardcode request bytearraystream to be later converted to byte array
+            request.write(data[0]);
+            request.write(data[1]);
+            request.write(fileName.getBytes(),0,fileName.getBytes().length);
+            request.write(0);
+            request.write(mode.getBytes(), 0, mode.getBytes().length);
+            request.write(0);
+
+            byte[] msg = request.toByteArray();
+
+            //put byteArray into packet and forward to server
+            try{
+                sendPacket = new DatagramPacket(data, receivePacket.getLength(), InetAddress.getLocalHost(), server1Port);
+                System.out.println("Forwardging packet to server on port " + sendPacket.getPort());
+                sendReceiveSocket.send(sendPacket);
+                System.out.println("Packet forwarded.");
+            }catch(IOException ioe){
+                ioe.printStackTrace();
+                System.exit(1);
+            }
+        }else if(packetType.equals("data") && whatDo == 7){
+            System.out.println("Changing data packets opcode...");
+            data[0] = 9;
+            data[1] = 9;
+            System.out.println("OPCODE changed to: " + data[0] + data[1]);
+            try{
+                sendPacket = new DatagramPacket(data, receivePacket.getLength(), InetAddress.getLocalHost(), server1Port);
+                System.out.println("Forwarding packet to server on port " + sendPacket.getPort());
+                sendReceiveSocket.send(sendPacket);
+                System.out.println("Packet forwarded.");
+            }catch(IOException ioe){
+                ioe.printStackTrace();
+                System.exit(1);
             }
         }
 
+
+        try{
+            System.out.println("\n");
+
+            //receive response from server
+            data = new byte[100];
+            receivePacket = new DatagramPacket(data, data.length);
+
+            System.out.println("Receiving...");
+            sendReceiveSocket.receive(receivePacket);
+            System.out.println("Packet received from server on port " + receivePacket.getPort());
+
+            //forward packet to client
+            sendPacket = new DatagramPacket(data, receivePacket.getLength(), clientAddress, clientPort );
+            System.out.println("Forwarding packet back to client...");
+            sendReceiveSocket.send(sendPacket);
+            System.out.println("Packet forwarded. \n");
+
+        }catch(IOException e){
+            e.printStackTrace();
+            System.exit(1);
+        }
+
+    }
+
+    public String extractFileName(byte[] data, int dataLength){
+        int i = 1;
+        StringBuilder sb = new StringBuilder();
+        while(data[++i] != 0 && i < dataLength){
+            sb.append((char)data[i]);
+        }
+
+        return sb.toString();
+    }
+    public void disconnect(){
         sendReceiveSocket.close();
         receiveSocket.close();
     }
 
-    public static void main( String args[] )
-    {
-        ErrorSimulator e = new ErrorSimulator();
-        e.run();
+    public static void main(String[] args){
+        ErrorSimulator er1 = new ErrorSimulator();
+        er1.run();
+
     }
-	
-	
+
+
 }
