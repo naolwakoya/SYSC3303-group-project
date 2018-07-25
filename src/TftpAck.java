@@ -1,16 +1,16 @@
 
-public class TftpAck extends TftpPacket{
+public class TftpAck extends TftpPacket {
 
 	int blockNumber = 0;
-	
-	public TftpAck(int blockNumber){
+
+	public TftpAck(int blockNumber) {
 		this.blockNumber = blockNumber;
 	}
-	
-	public int getBlockNumber(){
+
+	public int getBlockNumber() {
 		return blockNumber;
 	}
-	
+
 	@Override
 	public byte[] generateData() {
 		byte[] data = new byte[4];

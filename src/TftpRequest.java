@@ -1,12 +1,12 @@
 import java.io.ByteArrayOutputStream;
 
-public class TftpRequest extends TftpPacket{
-	
+public class TftpRequest extends TftpPacket {
+
 	String fileName;
 	String type;
 	String mode = "ascii";
 
-	public TftpRequest(String fileName, String type) throws IllegalArgumentException{
+	public TftpRequest(String fileName, String type) throws IllegalArgumentException {
 		if (type.equals("read") || type.equals("write"))
 			this.type = type;
 		else {
@@ -14,17 +14,17 @@ public class TftpRequest extends TftpPacket{
 		}
 		this.fileName = fileName;
 	}
-	
-	public String getFileName(){
+
+	public String getFileName() {
 		return fileName;
 	}
-	
-	public String getType(){
+
+	public String getType() {
 		return type;
 	}
 
 	@Override
-	public byte[] generateData(){
+	public byte[] generateData() {
 		// Create the byte array
 		ByteArrayOutputStream data = new ByteArrayOutputStream();
 		// Start with a 0
@@ -39,11 +39,11 @@ public class TftpRequest extends TftpPacket{
 		// Add another 0
 		data.write(0);
 		// Write the mode
-		data.write(mode.getBytes(),0,mode.getBytes().length);
+		data.write(mode.getBytes(), 0, mode.getBytes().length);
 		// Finish with another 0
 		data.write(0);
-		
+
 		return data.toByteArray();
-		
+
 	}
 }
