@@ -86,9 +86,10 @@ public class TftpClientConnectionThread implements Runnable {
 						return;
 					}
 					// Send acknowledgement packet
-					ack = new TftpAck(blockNumber++);
+					ack = new TftpAck(blockNumber);
 					try {
 						sendReceiveSocket.send(ack.generatePacket(destinationAddress, port));
+						blockNumber++;
 					} catch (IOException e) {
 						e.printStackTrace();
 						System.exit(1);
