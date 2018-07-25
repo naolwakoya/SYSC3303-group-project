@@ -237,14 +237,14 @@ public class Client {
 	}
 
 	/*
-	 * returns true if in verbose mode and false if in quserInterfaceet mode
+	 * returns true if in verbose mode and false if in quiet mode
 	 */
 	public boolean getMode() {
 		return verbose;
 	}
 
 	/*
-	 * Toggles between quserInterfaceet mode and verbose mode
+	 * Toggles between quiet mode and verbose mode
 	 */
 	public void toggleMode() {
 		if (verbose)
@@ -253,12 +253,12 @@ public class Client {
 			verbose = true;
 	}
 
-	public void parseAck(byte[] ack) {
+	public void printAck(byte[] ack) {
 		System.out.println("\nClient: Recieved packet is ACK: ");
 		System.out.println("Block#: " + ack[2] + ack[3]);
 	}
 
-	public void parseError(byte[] error) {
+	public void printError(byte[] error) {
 		System.out.println("\nClient: Recieved packet is ERROR: ");
 
 		// get the error message
@@ -273,18 +273,20 @@ public class Client {
 
 		// display error code to user
 		byte errorCode = error[3]; // get error code
-		if (errorCode == 0) {
-			System.out.println("Error Code: 00: Not defined, see error message (if any). ");
-		} else if (errorCode == 1) {
+		if (errorCode == 1) {
 			System.out.println("Error Code: 01: File not found. ");
 		} else if (errorCode == 2) {
 			System.out.println("Error Code: 02: Access violation. ");
 		} else if (errorCode == 3) {
 			System.out.println("Error Code: 03: Disk full or allocation exceeded. ");
+		} else if (errorCode == 4) {
+			System.out.println("Error Code: 04: Illegal TFTP Operation.");
+		} else if (errorCode == 5) {
+			System.out.println("Error Code: 05: Unknown transfer ID.");
 		} else if (errorCode == 6) {
 			System.out.println("Error Code: 06: File already exists. ");
 		} else {
-			System.out.println("Error Code: " + errorCode);
+			System.out.println("Invalid error code");
 		}
 
 		// display error message to user

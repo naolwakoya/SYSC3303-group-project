@@ -2,9 +2,11 @@ import java.io.ByteArrayOutputStream;
 
 public class TftpRequest extends TftpPacket {
 
-	String fileName;
-	String type;
-	String mode = "ascii";
+	// Assume filename is at least 1 character long
+	private static final int MIN_LENGTH = 10;
+	private String fileName;
+	private String type;
+	private String mode = "ascii";
 
 	public TftpRequest(String fileName, String type) throws IllegalArgumentException {
 		if (type.equals("read") || type.equals("write"))
@@ -45,5 +47,41 @@ public class TftpRequest extends TftpPacket {
 
 		return data.toByteArray();
 
+	}
+
+	@Override
+	public boolean validFormat(byte[] data) {
+		if (data == null || data.length < MIN_LENGTH)
+			return false;
+		//Check that the first byte is 0
+		if (data[0] != 0) {
+			return false;
+		}
+		//Check that the second byte is 1 or 2
+		else if (data[1] != 1 || data[1] != 2)
+			return false;
+		int x = 1;
+		// Parse the filename
+		int packetLength = data.length;
+		StringBuilder sb = new StringBuilder();
+		while (data[++x] != 0 && x < packetLength) {
+			sb.append((char) data[x]);
+		}
+		// Check if 0 after the filename
+		if (data[x] != 0)
+			return false;
+		//Parse the mode
+		StringBuilder sb2 = new StringBuilder();
+		while(data[++x] !=0 && x < packetLength){
+			sb2.append((char)data[x]);
+		}
+		//Check that the mode is correct
+		if(!(sb2.equals("ascii")) || !(sb2.equals("octet")))
+			return false;
+		//Check that the packet ends with a 0
+		if (data[packetLength-1]!=0)
+			return false;
+		else
+			return true;
 	}
 }

@@ -2,7 +2,8 @@ import java.io.ByteArrayOutputStream;
 
 public class TftpData extends TftpPacket {
 
-	static int MAX_SIZE = 512;
+	static final int MAX_SIZE = 512;
+	static final int MIN_SIZE = 4;
 	int blockNumber = 0;
 	byte[] data = null;
 	int dataLength;
@@ -30,10 +31,21 @@ public class TftpData extends TftpPacket {
 		return d.toByteArray();
 	}
 
-	public boolean validateData(byte[] rData) {
-
+	@Override
+	public boolean validFormat(byte[] data) {
+		if (data == null)
+			return false;
+		if (data.length < MIN_SIZE || data.length > MAX_SIZE)
+			return false;
+		// Check the opcode
+		if (data[0] != 0 || data[1] != 3)
+			return false;
+		//Extract the block number
+		int block = ((data[2] << 8) & 0xFF00)
+				| (data[3] & 0xFF);
+		if (block < 0 || block > 0xFFFF)
+			return false;
 		return true;
-
 	}
 
 }

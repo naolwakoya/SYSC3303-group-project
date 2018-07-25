@@ -40,13 +40,13 @@ public class TftpServer {
 				System.out.println("Waiting...");
 				serverSocket.receive(receivePacket);
 
-				if (data[1] == 2) {
+				if (data[0] == 0 && data[1] == 2) {
 					System.out.println("Received a write request");
 					isReadRequest = false;
 
 				}
 				// Check if it is a read request
-				else if (data[1] == 1) {
+				else if (data[0] == 0 && data[1] == 1) {
 					System.out.println("Received a read request");
 					isReadRequest = true;
 
