@@ -26,8 +26,10 @@ public class TftpServer {
 	}
 
 	public void startReceiving() {
-		DatagramPacket receivePacket = null;
+		DatagramPacket receivePacket;
 		Thread thread;
+		TftpRequest req = new TftpRequest();
+		;
 
 		System.out.println("Starting server");
 
@@ -35,22 +37,34 @@ public class TftpServer {
 
 			try {
 				// Create a DatagramPacket for receiving packets
-				byte data[] = new byte[1024];
+				byte data[] = new byte[516];
 				receivePacket = new DatagramPacket(data, data.length);
 				System.out.println("Waiting...");
 				serverSocket.receive(receivePacket);
-
-				if (data[0] == 0 && data[1] == 2) {
-					System.out.println("Received a write request");
-					isReadRequest = false;
-
+				// Check if it is a valid tftp request operation
+				if (req.validFormat(receivePacket.getData(), receivePacket.getLength())) {
+					// Check if it is a write request
+					if (data[1] == 2) {
+						System.out.println("Received a write request");
+						isReadRequest = false;
+					}
+					// Check if it is a read request
+					if (data[1] == 1) {
+						System.out.println("Received a read request");
+						isReadRequest = true;
+					}
+					
+					// Start the connection thread
+					thread = new Thread(new TftpClientConnectionThread(isReadRequest, receivePacket));
+					thread.start();
 				}
-				// Check if it is a read request
-				else if (data[0] == 0 && data[1] == 1) {
-					System.out.println("Received a read request");
-					isReadRequest = true;
-
+				else{
+					DatagramSocket sendSocket = new DatagramSocket();
+					TftpError error = new TftpError(4, "Invalid read or write request");
+					sendSocket.send(error.generatePacket(receivePacket.getAddress(), receivePacket.getPort()));
+					sendSocket.close();
 				}
+					
 			} catch (SocketTimeoutException e) {
 				continue;
 			} catch (SocketException e) {
@@ -61,10 +75,6 @@ public class TftpServer {
 				e.printStackTrace();
 				System.exit(1);
 			}
-
-			thread = new Thread(new TftpClientConnectionThread(isReadRequest, receivePacket));
-			thread.start();
-
 		}
 	}
 

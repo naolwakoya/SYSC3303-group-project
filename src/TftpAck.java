@@ -23,14 +23,14 @@ public class TftpAck extends TftpPacket {
 	}
 
 	@Override
-	public boolean validFormat(byte[] data) {
+	public boolean validFormat(byte[] data, int packetLength) {
 		if (data==null || data.length < PACKET_LENGTH || data.length > PACKET_LENGTH)
 			return false;
-		if (data[0]!=0 || data[1] != 4)
+		if ((data[0]!=0) && (data[1] != 4))
 			return false;
 		int block = ((data[2] << 8) & 0xFF00)
 				| (data[3] & 0xFF);
-		if (block < 0 || block > 0xFFFF)
+		if (block < 0 && block > 0xFFFF)
 			return false;
 		return true;
 	}

@@ -15,7 +15,7 @@ public class Client {
 	int sourceTID, destinationTID;
 
 	DatagramSocket sendReceiveSocket;
-	static DatagramPacket receivePacket;
+	DatagramPacket receivePacket;
 	DatagramPacket sendPacket;
 	String mode = "octet";
 	String filePath = System.getProperty("user.dir") + "/clientFiles/";
@@ -118,6 +118,7 @@ public class Client {
 				}
 
 				this.receive();
+				printAck(receivePacket.getData());
 				blockNumber++;
 
 			} while (nRead == 512);
@@ -198,7 +199,7 @@ public class Client {
 	 */
 	public DatagramPacket receive() {
 		// Create a DatagramPacket for receiving packets
-		byte receive[] = new byte[1024];
+		byte receive[] = new byte[516];
 		receivePacket = new DatagramPacket(receive, receive.length);
 
 		try {
@@ -254,12 +255,12 @@ public class Client {
 	}
 
 	public void printAck(byte[] ack) {
-		System.out.println("\nClient: Recieved packet is ACK: ");
+		System.out.println("\nClient: Received packet is ACK: ");
 		System.out.println("Block#: " + ack[2] + ack[3]);
 	}
 
 	public void printError(byte[] error) {
-		System.out.println("\nClient: Recieved packet is ERROR: ");
+		System.out.println("\nClient: Received packet is ERROR: ");
 
 		// get the error message
 		byte[] errorMsg = new byte[error.length - 5];

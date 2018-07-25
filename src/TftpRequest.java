@@ -8,6 +8,10 @@ public class TftpRequest extends TftpPacket {
 	private String type;
 	private String mode = "ascii";
 
+	public TftpRequest(){
+		
+	}
+	
 	public TftpRequest(String fileName, String type) throws IllegalArgumentException {
 		if (type.equals("read") || type.equals("write"))
 			this.type = type;
@@ -50,38 +54,48 @@ public class TftpRequest extends TftpPacket {
 	}
 
 	@Override
-	public boolean validFormat(byte[] data) {
-		if (data == null || data.length < MIN_LENGTH)
+	public boolean validFormat(byte[] data, int packetLength) {
+		if (data == null || data.length < packetLength || packetLength < MIN_LENGTH){
+			System.out.println("OOPS");
 			return false;
+		}
 		//Check that the first byte is 0
 		if (data[0] != 0) {
+			System.out.println("first byte");
 			return false;
 		}
 		//Check that the second byte is 1 or 2
-		else if (data[1] != 1 || data[1] != 2)
+		if ((data[1] != 1) && (data[1] != 2)){
+			System.out.println(data[1]);
+			System.out.println("wrong second byte");
 			return false;
+		}
 		int x = 1;
 		// Parse the filename
-		int packetLength = data.length;
 		StringBuilder sb = new StringBuilder();
 		while (data[++x] != 0 && x < packetLength) {
 			sb.append((char) data[x]);
 		}
 		// Check if 0 after the filename
-		if (data[x] != 0)
+		if (data[x] != 0){
+			System.out.println("0 after file");
 			return false;
+		}
 		//Parse the mode
 		StringBuilder sb2 = new StringBuilder();
 		while(data[++x] !=0 && x < packetLength){
 			sb2.append((char)data[x]);
 		}
 		//Check that the mode is correct
-		if(!(sb2.equals("ascii")) || !(sb2.equals("octet")))
+		if(!(sb2.toString().toLowerCase().equals("ascii")) && !(sb2.toString().toLowerCase().equals("octet"))){
+			System.out.println("mode");
 			return false;
+		}
 		//Check that the packet ends with a 0
-		if (data[packetLength-1]!=0)
+		if (data[packetLength-1]!=0){
+			System.out.println("ends with 0");
 			return false;
-		else
-			return true;
+		}
+		return true;
 	}
 }

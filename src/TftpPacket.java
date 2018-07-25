@@ -9,6 +9,6 @@ public abstract class TftpPacket {
 		return new DatagramPacket(data, data.length, addr, port);
 	}
 	
-	public abstract boolean validFormat(byte[] data);
+	public abstract boolean validFormat(byte[] data, int packetLength);
 
 }
