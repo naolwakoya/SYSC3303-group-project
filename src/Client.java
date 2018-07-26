@@ -109,11 +109,13 @@ public class Client {
 			// Check if file exists (error code 1)
 			if (!file.exists()) {
 				System.out.println("Cannot find the file: " + fileName);
+				connected = false;
 				return;
 			}
 			// Check for Access violation (error code 2)
 			if (!file.canRead()) {
 				System.out.println("Cannot read file: " + fileName);
+				connected = false;
 				return;
 			}
 
@@ -151,6 +153,7 @@ public class Client {
 				if (receivePacket.getData()[1] == 5) {
 					printError(receivePacket.getData(), receivePacket.getLength());
 					inputStream.close();
+					connected = false;
 					return;
 				}
 				// Check if packet is from an unknown transfer ID
@@ -158,6 +161,7 @@ public class Client {
 					TftpError error = new TftpError(5, "Unknown transfer ID");
 					sendReceiveSocket.send(error.generatePacket(receivePacket.getAddress(), receivePacket.getPort()));
 					inputStream.close();
+					connected = false;
 					return;
 				}
 				// Check if not a valid ack packet
@@ -165,6 +169,7 @@ public class Client {
 					TftpError error = new TftpError(4, "Invalid ack packet");
 					sendReceiveSocket.send(error.generatePacket(receivePacket.getAddress(), destinationTID));
 					inputStream.close();
+					connected = false;
 					return;
 				} 
 					
@@ -194,8 +199,9 @@ public class Client {
 		try {
 			File file = new File(filePath);
 			// Check access violation (error code 2)
-			if (file.exists() && !file.canWrite()) {
+			if (file.exists()) {
 				System.out.println("Can't overwrite existing file");
+				connected = false;
 				return;
 			}
 			byte[] fileData;
@@ -210,6 +216,7 @@ public class Client {
 				outputStream.close();
 				TftpError error = new TftpError(3, "Disk full or allocation exceeded");
 				sendReceiveSocket.send(error.generatePacket(receivePacket.getAddress(), destinationTID));
+				connected = false;
 				return;
 			}
 			// Send acknowledgement packet
@@ -236,6 +243,7 @@ public class Client {
 				if (receivePacket.getData()[1] == 5) {
 					printError(receivePacket.getData(), receivePacket.getLength());
 					outputStream.close();
+					connected = false;
 					return;
 				}
 				// Check if packet is from an unknown transfer ID
@@ -243,6 +251,7 @@ public class Client {
 					TftpError error = new TftpError(5, "Unknown transfer ID");
 					sendReceiveSocket.send(error.generatePacket(receivePacket.getAddress(), receivePacket.getPort()));
 					outputStream.close();
+					connected = false;
 					return;
 				}
 				// Check if not a valid data packet
@@ -250,6 +259,7 @@ public class Client {
 					TftpError error = new TftpError(4, "Invalid data packet");
 					sendReceiveSocket.send(error.generatePacket(receivePacket.getAddress(), destinationTID));
 					outputStream.close();
+					connected = false;
 					return;
 				} else {
 					try {
@@ -261,6 +271,7 @@ public class Client {
 						outputStream.close();
 						TftpError error = new TftpError(3, "Disk full or allocation exceeded");
 						sendReceiveSocket.send(error.generatePacket(receivePacket.getAddress(), destinationTID));
+						connected = false;
 						return;
 					}
 					// Send acknowledgement packet
