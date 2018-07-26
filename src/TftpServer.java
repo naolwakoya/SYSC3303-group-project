@@ -6,93 +6,95 @@ import java.net.SocketTimeoutException;
 
 public class TftpServer {
 
+	private DatagramSocket serverSocket;
+	String fileName;
+	public boolean serverOn;
+	private boolean isReadRequest;
 
+	public TftpServer() {
+		serverOn = true;
+		try {
+			System.out.println("SERVER IS Instantiated");
 
-    private DatagramSocket  serverSocket;
-    String fileName;
-    public boolean serverOn;
-    private boolean isReadRequest;
+			// Create a datagram socket for receiving packets on port 69
+			serverSocket = new DatagramSocket(69);
 
-    public TftpServer(){
-        serverOn=true;
-        try {
-            System.out.println("SERVER IS Instantiated");
+		} catch (SocketException se) {
+			se.printStackTrace();
+			System.exit(1);
+		}
+	}
 
-            //Create a datagram socket for receiving packets on port 69
-            serverSocket = new DatagramSocket(69);
+	public void startReceiving() {
+		DatagramPacket receivePacket;
+		Thread thread;
+		TftpRequest req = new TftpRequest();
+		;
 
-        }
-        catch(SocketException se){
-            se.printStackTrace();
-            System.exit(1);
-        }
-    }
+		System.out.println("Starting server");
 
-    public void startReceiving() {
-        DatagramPacket receivePacket=null;
-        Thread thread;
+		while (serverOn) {
 
-        System.out.println("Starting server");
+			try {
+				// Create a DatagramPacket for receiving packets
+				byte data[] = new byte[516];
+				receivePacket = new DatagramPacket(data, data.length);
+				System.out.println("Waiting...");
+				serverSocket.receive(receivePacket);
+				// Check if it is a valid tftp request operation
+				if (req.validateFormat(receivePacket.getData(), receivePacket.getLength())) {
+					// Check if it is a write request
+					if (data[1] == 2) {
+						System.out.println("Received a write request");
+						isReadRequest = false;
+					}
+					// Check if it is a read request
+					if (data[1] == 1) {
+						System.out.println("Received a read request");
+						isReadRequest = true;
+					}
+					
+					// Start the connection thread
+					thread = new Thread(new TftpClientConnectionThread(isReadRequest, receivePacket));
+					thread.start();
+				}
+				else{
+					DatagramSocket sendSocket = new DatagramSocket();
+					TftpError error = new TftpError(4, "Invalid read or write request");
+					sendSocket.send(error.generatePacket(receivePacket.getAddress(), receivePacket.getPort()));
+					sendSocket.close();
+				}
+					
+			} catch (SocketTimeoutException e) {
+				continue;
+			} catch (SocketException e) {
+				continue;
+			} catch (IOException e) {
+				System.out.print("IO Exception: likely:");
+				System.out.println("Receive Socket Timed Out.\n" + e);
+				e.printStackTrace();
+				System.exit(1);
+			}
+		}
+	}
 
-        while (serverOn) {
+	/*
+	 * returns the server socket
+	 */
+	public DatagramSocket getServerSocket() {
+		return serverSocket;
+	}
 
-            try{
-                //Create a DatagramPacket for receiving packets
-                byte data[] = new byte[1024];
-                receivePacket = new DatagramPacket(data, data.length);
-                System.out.println("Waiting...");
-                serverSocket.receive(receivePacket);
-                
-                if (data[1]==2)
-                {
-                    System.out.println("Received a write request");
-                    isReadRequest = false;
+	public static void main(String[] args) {
 
-                }
-                // Check if it is a read request
-                else if (data[1]==1){
-                    System.out.println("Received a read request");
-                    isReadRequest = true;
-                    
-                }
-            } catch (SocketTimeoutException e) {
-                continue;
-            } catch (SocketException e) {
-                continue;
-            } catch (IOException e) {
-                System.out.print("IO Exception: likely:");
-                System.out.println("Receive Socket Timed Out.\n" + e);
-                e.printStackTrace();
-                System.exit(1);
-            }
+		TftpServer server = new TftpServer();
 
-            thread = new Thread(new TftpClientConnectionThread(isReadRequest, receivePacket));
-            thread.start();
+		Thread controlThread = new Thread(new TftpServerControl(server));
 
-        }
-    }
-	        
-	    /*
-	     *returns the server socket
-	     */
-	    public DatagramSocket getServerSocket() {
-	        return serverSocket;
-	    }
-	    
-	    public static void main(String[] args){
-	
-	
-	        TftpServer server=new TftpServer();
-	
-	        Thread controlThread= new Thread(new TftpServerControl(server));
-	
-	        controlThread.start();
-	
-	        server.startReceiving();
-	
-	    }
+		controlThread.start();
 
+		server.startReceiving();
 
-
+	}
 
 }
