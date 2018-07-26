@@ -180,7 +180,6 @@ public class TftpClientConnectionThread implements Runnable {
 		} catch (FileNotFoundException e) {
 			try {
 				TftpError error = new TftpError(1, "Could not find:" + fileName);
-				System.out.println("Output error");
 				sendReceiveSocket.send(error.generatePacket(destinationAddress, port));
 				return;
 			} catch (IOException e1) {
