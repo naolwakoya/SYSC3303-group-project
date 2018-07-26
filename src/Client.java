@@ -201,6 +201,8 @@ public class Client {
 			// Check access violation (error code 2)
 			if (file.exists()) {
 				System.out.println("Can't overwrite existing file");
+				TftpError error = new TftpError(6, "File already exists, cannot overwrite");
+				sendReceiveSocket.send(error.generatePacket(receivePacket.getAddress(), destinationTID));
 				connected = false;
 				return;
 			}
@@ -421,7 +423,7 @@ public class Client {
 		String input;
 
 		while (true) {
-			System.out.println("Enter a command (For list of commands type 'help'):");
+			System.out.println("\nEnter a command (For list of commands type 'help'):");
 			input = s.nextLine().toLowerCase();
 			String[] cmd = input.split("\\s+");
 
