@@ -19,6 +19,8 @@ public class TftpData extends TftpPacket {
 			System.arraycopy(data, 0, this.data, 0, dataLength);
 		}
 	}
+	
+	public TftpData(){};
 
 	@Override
 	public byte[] generateData() {
@@ -32,11 +34,13 @@ public class TftpData extends TftpPacket {
 	}
 
 	@Override
-	public boolean validFormat(byte[] data, int packetLength) {
+	public boolean validateFormat(byte[] data, int packetLength) {
 		if (data == null)
 			return false;
-		if (data.length < MIN_SIZE || data.length > MAX_SIZE)
+		if (packetLength > data.length || packetLength < MIN_SIZE || packetLength > 516){
 			return false;
+
+		}
 		// Check the opcode
 		if ((data[0] != 0) && (data[1] != 3))
 			return false;

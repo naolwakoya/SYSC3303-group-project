@@ -7,6 +7,8 @@ public class TftpAck extends TftpPacket {
 	public TftpAck(int blockNumber) {
 		this.blockNumber = blockNumber;
 	}
+	
+	public TftpAck(){};
 
 	public int getBlockNumber() {
 		return blockNumber;
@@ -23,8 +25,8 @@ public class TftpAck extends TftpPacket {
 	}
 
 	@Override
-	public boolean validFormat(byte[] data, int packetLength) {
-		if (data==null || data.length < PACKET_LENGTH || data.length > PACKET_LENGTH)
+	public boolean validateFormat(byte[] data, int packetLength) {
+		if (data==null || packetLength < PACKET_LENGTH || packetLength != PACKET_LENGTH)
 			return false;
 		if ((data[0]!=0) && (data[1] != 4))
 			return false;

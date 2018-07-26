@@ -5,7 +5,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.SyncFailedException;
-import java.io.UnsupportedEncodingException;
 import java.net.*;
 import java.util.Scanner;
 
@@ -17,6 +16,10 @@ public class Client {
 	DatagramSocket sendReceiveSocket;
 	DatagramPacket receivePacket;
 	DatagramPacket sendPacket;
+
+	TftpAck validAck = new TftpAck();
+	TftpData validData = new TftpData();
+
 	String mode = "octet";
 	String filePath = System.getProperty("user.dir") + "/clientFiles/";
 	boolean connected = false;
@@ -35,7 +38,7 @@ public class Client {
 
 	// Establishes a read or write connection with the server according to the
 	// TFTP protocol
-	public void establishConnection(String fileName, String request) {
+	public void establishConnection(String fileName, String request) throws IOException {
 		try {
 
 			sendReceiveSocket = new DatagramSocket();
@@ -66,14 +69,34 @@ public class Client {
 		}
 
 		this.receive();
+		// Check if it is an error packet
 		if (receivePacket.getData()[1] == 5) {
 			printError(receivePacket.getData(), receivePacket.getLength());
-		} else {
-			destinationTID = receivePacket.getPort();
-			System.out.println("Connected to server");
-			connected = true;
 		}
-
+		// Check if it is a valid ack packet
+		else if (receivePacket.getData()[1] == 4) {
+			if (!validAck.validateFormat(receivePacket.getData(), receivePacket.getLength())) {
+				TftpError error = new TftpError(4, "Invalid ack packet");
+				sendReceiveSocket.send(error.generatePacket(receivePacket.getAddress(), receivePacket.getPort()));
+			}
+			else {
+				connected = true;
+				destinationTID = receivePacket.getPort();
+				System.out.println("Connected to server.");
+			}
+		}
+		//Check if it is a valid data packet
+		else if (receivePacket.getData()[1] == 3) {
+			if (!validData.validateFormat(receivePacket.getData(), receivePacket.getLength())) {
+				TftpError error = new TftpError(4, "Invalid data packet");
+				sendReceiveSocket.send(error.generatePacket(receivePacket.getAddress(), receivePacket.getPort()));
+			}
+			else {
+				connected = true;
+				destinationTID = receivePacket.getPort();
+				System.out.println("Connected to server.");
+			}
+		}
 	}
 
 	/*
@@ -109,9 +132,10 @@ public class Client {
 				}
 				dataPacket = new TftpData(blockNumber, data, nRead);
 				sendPacket = dataPacket.generatePacket(receivePacket.getAddress(), destinationTID);
+				System.out.println("\nClient: Sending DATA packet");
+				System.out.println("Block#: " + sendPacket.getData()[2] + sendPacket.getData()[3]);
 
 				if (verbose) {
-					System.out.println("Sending packet:");
 					printPacketInformation(sendPacket);
 				}
 
@@ -123,16 +147,40 @@ public class Client {
 				}
 
 				this.receive();
+				// Check if it is an error packet
+				if (receivePacket.getData()[1] == 5) {
+					printError(receivePacket.getData(), receivePacket.getLength());
+					inputStream.close();
+					return;
+				}
+				// Check if packet is from an unknown transfer ID
+				if (receivePacket.getPort() != destinationTID) {
+					TftpError error = new TftpError(5, "Unknown transfer ID");
+					sendReceiveSocket.send(error.generatePacket(receivePacket.getAddress(), receivePacket.getPort()));
+					inputStream.close();
+					return;
+				}
+				// Check if not a valid ack packet
+				if (!validAck.validateFormat(receivePacket.getData(), receivePacket.getLength())) {
+					TftpError error = new TftpError(4, "Invalid ack packet");
+					sendReceiveSocket.send(error.generatePacket(receivePacket.getAddress(), destinationTID));
+					inputStream.close();
+					return;
+				} 
+					
 				printAck(receivePacket.getData());
 				blockNumber++;
 
 			} while (nRead == 512);
 
 			inputStream.close();
+			connected = false;
 
 		} catch (FileNotFoundException e) {
+			connected = false;
 			System.out.println("Failed to send " + fileName + ": " + e.getMessage());
 		} catch (IOException e) {
+			connected = false;
 			System.out.println("IOException: Failed to send " + fileName + ": " + e.getMessage());
 		}
 
@@ -150,58 +198,108 @@ public class Client {
 				System.out.println("Can't overwrite existing file");
 				return;
 			}
-
 			byte[] fileData;
 			FileOutputStream outputStream = new FileOutputStream(filePath);
 			int blockNumber = 1;
+			try {
+				fileData = parseData(receivePacket.getData(), receivePacket.getLength());
+				outputStream.write(fileData);
+				outputStream.getFD().sync();
+			} catch (SyncFailedException e) {
+				file.delete();
+				outputStream.close();
+				TftpError error = new TftpError(3, "Disk full or allocation exceeded");
+				sendReceiveSocket.send(error.generatePacket(receivePacket.getAddress(), destinationTID));
+				return;
+			}
+			// Send acknowledgement packet
+			TftpAck ack = new TftpAck(blockNumber);
+			sendPacket = ack.generatePacket(receivePacket.getAddress(), destinationTID);
+			System.out.println("\nClient: Sending ACK packet");
+			System.out.println("Block#: " + sendPacket.getData()[2] + sendPacket.getData()[3]);
 
+			blockNumber++;
+
+			if (verbose) {
+				printPacketInformation(sendPacket);
+			}
+
+			try {
+				sendReceiveSocket.send(sendPacket);
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(1);
+			}
 			do {
-				try {
-					fileData = parseData(receivePacket.getData(), receivePacket.getLength());
-					outputStream.write(fileData);
-					outputStream.getFD().sync();
-				} catch (SyncFailedException e) {
-					file.delete();
+				this.receive();
+				// Check if it is an error packet
+				if (receivePacket.getData()[1] == 5) {
+					printError(receivePacket.getData(), receivePacket.getLength());
 					outputStream.close();
-					TftpError error = new TftpError(3, "Disk full or allocation exceeded");
-					sendReceiveSocket.send(error.generatePacket(receivePacket.getAddress(), destinationTID));
 					return;
 				}
-				// Send acknowledgement packet
-				TftpAck ack = new TftpAck(blockNumber);
-				sendPacket = ack.generatePacket(receivePacket.getAddress(), destinationTID);
-				blockNumber++;
-
-				if (verbose) {
-					System.out.println("Sending packet:");
-					printPacketInformation(sendPacket);
+				// Check if packet is from an unknown transfer ID
+				if (receivePacket.getPort() != destinationTID) {
+					TftpError error = new TftpError(5, "Unknown transfer ID");
+					sendReceiveSocket.send(error.generatePacket(receivePacket.getAddress(), receivePacket.getPort()));
+					outputStream.close();
+					return;
 				}
+				// Check if not a valid data packet
+				if (!validData.validateFormat(receivePacket.getData(), receivePacket.getLength())) {
+					TftpError error = new TftpError(4, "Invalid data packet");
+					sendReceiveSocket.send(error.generatePacket(receivePacket.getAddress(), destinationTID));
+					outputStream.close();
+					return;
+				} else {
+					try {
+						fileData = parseData(receivePacket.getData(), receivePacket.getLength());
+						outputStream.write(fileData);
+						outputStream.getFD().sync();
+					} catch (SyncFailedException e) {
+						file.delete();
+						outputStream.close();
+						TftpError error = new TftpError(3, "Disk full or allocation exceeded");
+						sendReceiveSocket.send(error.generatePacket(receivePacket.getAddress(), destinationTID));
+						return;
+					}
+					// Send acknowledgement packet
+					ack = new TftpAck(blockNumber);
+					sendPacket = ack.generatePacket(receivePacket.getAddress(), destinationTID);
+					System.out.println("\nClient: Sending ACK packet");
+					System.out.println("Block#: " + sendPacket.getData()[2] + sendPacket.getData()[3]);
 
-				try {
-					sendReceiveSocket.send(sendPacket);
-				} catch (IOException e) {
-					e.printStackTrace();
-					System.exit(1);
+					blockNumber++;
+
+					if (verbose) {
+						System.out.println("Sending packet:");
+						printPacketInformation(sendPacket);
+					}
+
+					try {
+						sendReceiveSocket.send(sendPacket);
+					} catch (IOException e) {
+						e.printStackTrace();
+						System.exit(1);
+					}
 				}
-
-				this.receive();
 			} while (!(fileData.length < 512));
 			outputStream.close();
+			connected = false;
 
 		} catch (FileNotFoundException e1) {
 			System.out.println("Failed to send " + fileName + ": " + e1.getMessage());
+			connected = false;
 			return;
 		} catch (IOException e) {
 			System.out.println("IOException: Failed to send " + fileName + ": " + e.getMessage());
 			new File(filePath).delete();
+			connected = false;
 			return;
 		}
 	}
 
-	/*
-	 * Waits to receive a packet from the sendReceiveSocket
-	 */
-	public DatagramPacket receive() {
+	public void receive() {
 		// Create a DatagramPacket for receiving packets
 		byte receive[] = new byte[516];
 		receivePacket = new DatagramPacket(receive, receive.length);
@@ -218,7 +316,6 @@ public class Client {
 			System.out.println("Received packet:");
 			printPacketInformation(receivePacket);
 		}
-		return receivePacket;
 	}
 
 	/*
@@ -298,6 +395,8 @@ public class Client {
 	 * returns the byte array of the data in the tftp data packet
 	 */
 	public byte[] parseData(byte[] data, int dataLength) {
+		System.out.println("\nClient: Received packet is DATA: ");
+		System.out.println("Block#: " + data[2] + data[3]);
 		ByteArrayOutputStream stream = new ByteArrayOutputStream();
 		stream.write(data, 4, dataLength - 4);
 		return data = stream.toByteArray();
@@ -305,7 +404,8 @@ public class Client {
 
 	public static void main(String[] args) throws Exception {
 		Client c = new Client();
-		System.out.println("Welcome to SYSC3303-groupproject TFTP Client \n");
+		System.out.println("Welcome to SYSC3303-groupproject TFTP Client");
+		System.out.println("The client is in verbose-normal mode\n");
 		Scanner s = new Scanner(System.in);
 		String input;
 

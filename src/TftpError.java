@@ -38,7 +38,7 @@ public class TftpError extends TftpPacket {
 	}
 
 	@Override
-	public boolean validFormat(byte[] data, int packetLength) {
+	public boolean validateFormat(byte[] data, int packetLength) {
 		if (data == null)
 			return false;
 		if (data.length < MIN_LENGTH || data.length > 516)

@@ -42,7 +42,7 @@ public class TftpServer {
 				System.out.println("Waiting...");
 				serverSocket.receive(receivePacket);
 				// Check if it is a valid tftp request operation
-				if (req.validFormat(receivePacket.getData(), receivePacket.getLength())) {
+				if (req.validateFormat(receivePacket.getData(), receivePacket.getLength())) {
 					// Check if it is a write request
 					if (data[1] == 2) {
 						System.out.println("Received a write request");

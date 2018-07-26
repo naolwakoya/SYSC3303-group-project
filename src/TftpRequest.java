@@ -54,7 +54,7 @@ public class TftpRequest extends TftpPacket {
 	}
 
 	@Override
-	public boolean validFormat(byte[] data, int packetLength) {
+	public boolean validateFormat(byte[] data, int packetLength) {
 		if (data == null || data.length < packetLength || packetLength < MIN_LENGTH)
 			return false;
 		//Check that the first byte is 0
