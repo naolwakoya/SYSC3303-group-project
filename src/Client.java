@@ -108,9 +108,7 @@ public class Client {
 			File file = new File(filePath);
 			// Check if file exists (error code 1)
 			if (!file.exists()) {
-				System.out.println("Cannot find the file: " + fileName);
-				connected = false;
-				return;
+				throw new FileNotFoundException();
 			}
 			// Check for Access violation (error code 2)
 			if (!file.canRead()) {
@@ -182,8 +180,14 @@ public class Client {
 			connected = false;
 
 		} catch (FileNotFoundException e) {
-			connected = false;
-			System.out.println("Failed to send " + fileName + ": " + e.getMessage());
+			try {
+				connected = false;
+				TftpError error = new TftpError(1, "Could not find:" + fileName);
+				sendReceiveSocket.send(error.generatePacket(receivePacket.getAddress(), destinationTID));
+				return;
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
 		} catch (IOException e) {
 			connected = false;
 			System.out.println("IOException: Failed to send " + fileName + ": " + e.getMessage());
