@@ -65,8 +65,15 @@ public class Client {
 			System.exit(1);
 		}
 
-		System.out.println("Connected to server");
-		connected = true;
+		this.receive();
+		if (receivePacket.getData()[1] == 5) {
+			printError(receivePacket.getData(), receivePacket.getLength());
+		} else {
+			destinationTID = receivePacket.getPort();
+			System.out.println("Connected to server");
+			connected = true;
+		}
+
 	}
 
 	/*
@@ -74,8 +81,6 @@ public class Client {
 	 */
 	public void writeFile(String fileName) {
 		try {
-			this.receive();
-			destinationTID = receivePacket.getPort();
 			String filePath = System.getProperty("user.dir") + "/clientFiles/" + fileName;
 			File file = new File(filePath);
 			// Check if file exists (error code 1)
@@ -151,9 +156,6 @@ public class Client {
 			int blockNumber = 1;
 
 			do {
-				this.receive();
-				destinationTID = receivePacket.getPort();
-
 				try {
 					fileData = parseData(receivePacket.getData(), receivePacket.getLength());
 					outputStream.write(fileData);
@@ -181,9 +183,11 @@ public class Client {
 					e.printStackTrace();
 					System.exit(1);
 				}
+
+				this.receive();
 			} while (!(fileData.length < 512));
 			outputStream.close();
-			
+
 		} catch (FileNotFoundException e1) {
 			System.out.println("Failed to send " + fileName + ": " + e1.getMessage());
 			return;
@@ -259,21 +263,10 @@ public class Client {
 		System.out.println("Block#: " + ack[2] + ack[3]);
 	}
 
-	public void printError(byte[] error) {
+	public void printError(byte[] error, int packetLength) {
 		System.out.println("\nClient: Received packet is ERROR: ");
-
-		// get the error message
-		byte[] errorMsg = new byte[error.length - 5];
-		System.arraycopy(error, 4, errorMsg, 0, error.length - 5);
-		String message = null;
-		try {
-			message = new String(errorMsg, "US-ASCII");
-		} catch (UnsupportedEncodingException e) {
-			e.printStackTrace();
-		}
-
 		// display error code to user
-		byte errorCode = error[3]; // get error code
+		int errorCode = error[3]; // get error code
 		if (errorCode == 1) {
 			System.out.println("Error Code: 01: File not found. ");
 		} else if (errorCode == 2) {
@@ -289,9 +282,16 @@ public class Client {
 		} else {
 			System.out.println("Invalid error code");
 		}
-
+		// get the error message
+		StringBuilder errorMsg = new StringBuilder();
+		for (int x = 4; x < (packetLength - 1); x++) {
+			if (error[x] == 0)
+				throw new IllegalArgumentException();
+			else
+				errorMsg.append((char) error[x]);
+		}
 		// display error message to user
-		System.out.println("Error message:" + message);
+		System.out.println("Error message:" + errorMsg.toString());
 	}
 
 	/*
@@ -325,7 +325,6 @@ public class Client {
 				return;
 			} else if ((cmd[0].equals("read") || cmd[0].equals("write")) && cmd[1].length() > 0) {
 				c.establishConnection(cmd[1], cmd[0]);
-
 				if (c.isConnected()) {
 					if (cmd[0].equals("read")) {
 						c.readFile(cmd[1]);

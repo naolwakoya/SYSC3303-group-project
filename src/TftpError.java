@@ -28,6 +28,7 @@ public class TftpError extends TftpPacket {
 		// Then the opcode
 		data.write(5);
 		// Then the error code
+		data.write(errorCode >> 8);
 		data.write(errorCode);
 		// Then the error message
 		data.write(errorMessage.getBytes(), 0, errorMessage.getBytes().length);

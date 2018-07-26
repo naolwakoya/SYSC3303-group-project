@@ -108,7 +108,7 @@ public class TftpClientConnectionThread implements Runnable {
 			
 		} catch (FileNotFoundException e1) {
 			new File(filePath + fileName).delete();
-			TftpError error = new TftpError(1, "Could not find:" + fileName);
+			TftpError error = new TftpError(1, "Could not find: " + fileName);
 			try {
 				sendReceiveSocket.send(error.generatePacket(destinationAddress, port));
 				return;
