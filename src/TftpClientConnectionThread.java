@@ -8,6 +8,8 @@ import java.net.SocketException;
 public class TftpClientConnectionThread implements Runnable {
 	DatagramSocket sendReceiveSocket;
 	DatagramPacket sendPacket, receivePacket;
+	TftpData validData = new TftpData();
+	TftpAck validAck = new TftpAck();
 	String fileName;
 	String filePath = System.getProperty("user.dir") + "/serverFiles/";
 	boolean isReadRequest;
@@ -75,7 +77,25 @@ public class TftpClientConnectionThread implements Runnable {
 			do {
 				try {
 					this.receive();
-
+					// Check if it is an error packet
+					if (receivePacket.getData()[1] == 5) {
+						outputStream.close();
+						return;
+					}
+					// Check if packet is from an unknown transfer ID
+					if (receivePacket.getPort() != port) {
+						TftpError error = new TftpError(5, "Unknown transfer ID");
+						sendReceiveSocket.send(error.generatePacket(receivePacket.getAddress(), receivePacket.getPort()));
+						outputStream.close();
+						return;
+					}
+					// Check if not a valid data packet
+					if (!validData.validateFormat(receivePacket.getData(), receivePacket.getLength())) {
+						TftpError error = new TftpError(4, "Invalid data packet");
+						sendReceiveSocket.send(error.generatePacket(receivePacket.getAddress(), port));
+						outputStream.close();
+						return;
+					}
 					if (file.canWrite()) {
 						fileData = extractFromDataPacket(receivePacket.getData(), receivePacket.getLength());
 						outputStream.write(fileData);
@@ -171,10 +191,30 @@ public class TftpClientConnectionThread implements Runnable {
 				}
 
 				this.receive();
+				// Check if it is an error packet
+				if (receivePacket.getData()[1] == 5) {
+					inputStream.close();
+					return;
+				}
+				// Check if packet is from an unknown transfer ID
+				if (receivePacket.getPort() != port) {
+					TftpError error = new TftpError(5, "Unknown transfer ID");
+					sendReceiveSocket.send(error.generatePacket(receivePacket.getAddress(), receivePacket.getPort()));
+					inputStream.close();
+					return;
+				}
+				// Check if not a valid ack packet
+				if (!validAck.validateFormat(receivePacket.getData(), receivePacket.getLength())) {
+					TftpError error = new TftpError(4, "Invalid ack packet");
+					sendReceiveSocket.send(error.generatePacket(receivePacket.getAddress(), port));
+					inputStream.close();
+					return;
+				} 
 				blockNumber++;
 
 			} while (nRead == 512);
 
+			System.out.println("Done sending file: " + fileName + " to client");
 			inputStream.close();
 
 		} catch (FileNotFoundException e) {

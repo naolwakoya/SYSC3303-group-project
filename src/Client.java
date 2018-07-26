@@ -367,12 +367,12 @@ public class Client {
 	}
 
 	public void printAck(byte[] ack) {
-		System.out.println("\nClient: Received packet is ACK: ");
+		System.out.println("Client: Received ACK Packet ");
 		System.out.println("Block#: " + ack[2] + ack[3]);
 	}
 
 	public void printError(byte[] error, int packetLength) {
-		System.out.println("\nClient: Received packet is ERROR: ");
+		System.out.println("Client: Received ERROR Packet ");
 		// display error code to user
 		int errorCode = error[3]; // get error code
 		if (errorCode == 1) {
@@ -406,7 +406,7 @@ public class Client {
 	 * returns the byte array of the data in the tftp data packet
 	 */
 	public byte[] parseData(byte[] data, int dataLength) {
-		System.out.println("\nClient: Received packet is DATA: ");
+		System.out.println("Client: Received DATA packet ");
 		System.out.println("Block#: " + data[2] + data[3]);
 		ByteArrayOutputStream stream = new ByteArrayOutputStream();
 		stream.write(data, 4, dataLength - 4);
