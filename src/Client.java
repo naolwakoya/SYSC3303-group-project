@@ -434,7 +434,7 @@ public class Client {
 				System.out.println("Client is shutting down");
 				s.close();
 				return;
-			} else if ((cmd[0].equals("read") || cmd[0].equals("write")) && cmd[1].length() > 0) {
+			} else if ((cmd[0].equals("read") || cmd[0].equals("write")) && cmd.length>1 && cmd[1].length() > 0) {
 				c.establishConnection(cmd[1], cmd[0]);
 				if (c.isConnected()) {
 					if (cmd[0].equals("read")) {
@@ -477,7 +477,7 @@ public class Client {
 		System.out.println("mode - Toggles between quiet and verbose mode");
 		System.out.println("dir - prints the current directory for file transfers");
 		System.out.println("test - Toggles between normal and test mode");
-		System.out.println("port - Outputs the destination port");
+		System.out.println("port - Outputs the destination port\n");
 	}
 
 	public void toggleTest() {
