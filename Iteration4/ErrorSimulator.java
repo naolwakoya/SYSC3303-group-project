@@ -5,8 +5,8 @@ import java.util.Scanner;
 public class ErrorSimulator implements Runnable {
 
 	// instance variables
-	DatagramSocket receiveSocket, sendReceiveSocket;
-	DatagramPacket receivePacket, sendPacket;
+	private DatagramSocket sendReceiveSocket;
+	private DatagramPacket receivePacket, sendPacket;
 
 	boolean isConnected = false;
 
@@ -20,19 +20,14 @@ public class ErrorSimulator implements Runnable {
 
 	Scanner input;
 
-	// constructor
-	public ErrorSimulator() {
-	}
-
 	public void connect() {
 		// scanner to receive user input from prompts
 		input = new Scanner(System.in);
 
 		// create new datagram sockets for the client and server
 		try {
-			receiveSocket = new DatagramSocket(proxyPort, InetAddress.getLocalHost());
-			System.out.println("Connected to client on port: " + receiveSocket.getLocalPort());
-			sendReceiveSocket = new DatagramSocket();
+			sendReceiveSocket = new DatagramSocket(proxyPort, InetAddress.getLocalHost());
+			System.out.println("Connected to client on port: " + sendReceiveSocket.getLocalPort());
 		} catch (IOException se) {
 			se.printStackTrace();
 			System.exit(1);
@@ -52,7 +47,7 @@ public class ErrorSimulator implements Runnable {
 	// asks the user what type of operation to perform
 	public int getOperation() {
 		int response = 9;
-		System.out.println("What would you like corrupt?");
+		System.out.println("What would you like change?");
 		System.out.println("(0): normal operation");
 		System.out.println("(1): request packets");
 		System.out.println("(2): data packets");
@@ -89,7 +84,7 @@ public class ErrorSimulator implements Runnable {
 	}
 
 	// method to return the type of packet received
-	public String getPacketType(byte[] data) {
+	private String getPacketType(byte[] data) {
 		if (data[1] == 1 || data[1] == 2) {
 			return "request";
 		} else if (data[1] == 3) {
@@ -112,7 +107,7 @@ public class ErrorSimulator implements Runnable {
 			// receive() method blocks until datagram is received, data is now
 			// populated with recievd packet
 			System.out.println("Receiving...");
-			receiveSocket.receive(receivePacket);
+			sendReceiveSocket.receive(receivePacket);
 			clientAddress = receivePacket.getAddress();
 			clientPort = receivePacket.getPort();
 			System.out.println("Packet received from client");
@@ -125,8 +120,8 @@ public class ErrorSimulator implements Runnable {
 
 		String packetType = "";
 		int whatDo = 0; // default action (do nothing)
-		while (actionPerformed == false) {
-
+		//if no user input has been set, it will enter this if statement and ask the user what they want to do
+		if (!actionPerformed) {
 			packetType = getPacketType(data);
 			whatDo = getOperation();
 			actionPerformed = true;
@@ -135,8 +130,7 @@ public class ErrorSimulator implements Runnable {
 			// no nothing, simply forward packet thats been received
 			System.out.println("Forwarding packet without altering it");
 			try {
-				sendPacket = new DatagramPacket(data, receivePacket.getLength(), InetAddress.getLocalHost(),
-						server1Port);
+				sendPacket = new DatagramPacket(data, receivePacket.getLength(), InetAddress.getLocalHost(), server1Port);
 				System.out.println("Forwarding packet to server on port " + sendPacket.getPort());
 				sendReceiveSocket.send(sendPacket);
 				System.out.println("Packet forwarded.");
@@ -152,8 +146,7 @@ public class ErrorSimulator implements Runnable {
 			data[1] = 9;
 			System.out.println("OPCODE changed to: " + data[0] + data[1]);
 			try {
-				sendPacket = new DatagramPacket(data, receivePacket.getLength(), InetAddress.getLocalHost(),
-						server1Port);
+				sendPacket = new DatagramPacket(data, receivePacket.getLength(), InetAddress.getLocalHost(), server1Port);
 				System.out.println("Forwarding packet to server on port " + sendPacket.getPort());
 				sendReceiveSocket.send(sendPacket);
 				System.out.println("Packet forwarded.");
@@ -185,8 +178,7 @@ public class ErrorSimulator implements Runnable {
 
 			// put byteArray into packet and forward to server
 			try {
-				sendPacket = new DatagramPacket(data, receivePacket.getLength(), InetAddress.getLocalHost(),
-						server1Port);
+				sendPacket = new DatagramPacket(msg, receivePacket.getLength(), InetAddress.getLocalHost(), server1Port);
 				System.out.println("Forwardging packet to server on port " + sendPacket.getPort());
 				sendReceiveSocket.send(sendPacket);
 				System.out.println("Packet forwarded");
@@ -195,8 +187,8 @@ public class ErrorSimulator implements Runnable {
 				System.exit(1);
 			}
 		} else if (packetType.equals("request") && whatDo == 6) {
+			//takes the request packet and alters the filename
 			System.out.println("option to change request packet's mode has been chosen");
-			// takes the request packet and alters the filename
 			System.out.println("Altering mode of request packet...");
 			System.out.println("Changing mode to: randomMode");
 
@@ -217,8 +209,7 @@ public class ErrorSimulator implements Runnable {
 
 			// put byteArray into packet and forward to server
 			try {
-				sendPacket = new DatagramPacket(data, receivePacket.getLength(), InetAddress.getLocalHost(),
-						server1Port);
+				sendPacket = new DatagramPacket(data, receivePacket.getLength(), InetAddress.getLocalHost(), server1Port);
 				System.out.println("Forwardging packet to server on port " + sendPacket.getPort());
 				sendReceiveSocket.send(sendPacket);
 				System.out.println("Packet forwarded.");
@@ -232,8 +223,7 @@ public class ErrorSimulator implements Runnable {
 			data[1] = 9;
 			System.out.println("OPCODE changed to: " + data[0] + data[1]);
 			try {
-				sendPacket = new DatagramPacket(data, receivePacket.getLength(), InetAddress.getLocalHost(),
-						server1Port);
+				sendPacket = new DatagramPacket(data, receivePacket.getLength(), InetAddress.getLocalHost(), server1Port);
 				System.out.println("Forwarding packet to server on port " + sendPacket.getPort());
 				sendReceiveSocket.send(sendPacket);
 				System.out.println("Packet forwarded.");
@@ -247,12 +237,13 @@ public class ErrorSimulator implements Runnable {
 			System.out.println("\n");
 
 			// receive response from server
-			data = new byte[100];
+			data = new byte[516];
 			receivePacket = new DatagramPacket(data, data.length);
 
 			System.out.println("Receiving...");
 			sendReceiveSocket.receive(receivePacket);
 			System.out.println("Packet received from server on port " + receivePacket.getPort());
+			server1Port = receivePacket.getPort();
 
 			// forward packet to client
 			sendPacket = new DatagramPacket(data, receivePacket.getLength(), clientAddress, clientPort);
@@ -277,10 +268,6 @@ public class ErrorSimulator implements Runnable {
 		return sb.toString();
 	}
 
-	public void disconnect() {
-		sendReceiveSocket.close();
-		receiveSocket.close();
-	}
 
 	public static void main(String[] args) {
 		ErrorSimulator er1 = new ErrorSimulator();
