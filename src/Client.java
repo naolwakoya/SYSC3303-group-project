@@ -44,6 +44,7 @@ public class Client {
 		try {
 
 			sendReceiveSocket = new DatagramSocket();
+			sendReceiveSocket.setSoTimeout(2000);
 		} catch (SocketException se) {
 			se.printStackTrace();
 			System.exit(1);

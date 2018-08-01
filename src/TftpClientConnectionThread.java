@@ -22,6 +22,7 @@ public class TftpClientConnectionThread implements Runnable {
 
 		try {
 			sendReceiveSocket = new DatagramSocket();
+			sendReceiveSocket.setSoTimeout(2000);
 		} catch (SocketException e) {
 			e.printStackTrace();
 		}
