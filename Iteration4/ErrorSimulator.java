@@ -2,8 +2,7 @@ import java.io.*;
 import java.net.*;
 import java.util.Scanner;
 
-public class ErrorSimulator implements Runnable {
-
+public class ErrorSimulator{
 	// instance variables
 	private DatagramSocket sendReceiveSocket;
 	private DatagramPacket receivePacket, sendPacket;
@@ -36,6 +35,7 @@ public class ErrorSimulator implements Runnable {
 	}
 
 	public void run() {
+		//if no connection has been established, the connect method will run
 		if (isConnected == false) {
 			connect();
 		}
@@ -95,7 +95,7 @@ public class ErrorSimulator implements Runnable {
 		return "error";
 	}
 
-	public void forward() {
+	private void forward() {
 		// create byte array to hold packet to be received
 		byte[] data = new byte[516];
 
@@ -126,6 +126,8 @@ public class ErrorSimulator implements Runnable {
 			whatDo = getOperation();
 			actionPerformed = true;
 		}
+
+		//receive packet from client and decide what to do with it.
 		if (whatDo == 0) {
 			// no nothing, simply forward packet thats been received
 			System.out.println("Forwarding packet without altering it");
@@ -187,7 +189,7 @@ public class ErrorSimulator implements Runnable {
 				System.exit(1);
 			}
 		} else if (packetType.equals("request") && whatDo == 6) {
-			//takes the request packet and alters the filename
+			//takes the request packet and alters the mode
 			System.out.println("option to change request packet's mode has been chosen");
 			System.out.println("Altering mode of request packet...");
 			System.out.println("Changing mode to: randomMode");
@@ -209,7 +211,7 @@ public class ErrorSimulator implements Runnable {
 
 			// put byteArray into packet and forward to server
 			try {
-				sendPacket = new DatagramPacket(data, receivePacket.getLength(), InetAddress.getLocalHost(), server1Port);
+				sendPacket = new DatagramPacket(msg, receivePacket.getLength(), InetAddress.getLocalHost(), server1Port);
 				System.out.println("Forwardging packet to server on port " + sendPacket.getPort());
 				sendReceiveSocket.send(sendPacket);
 				System.out.println("Packet forwarded.");
@@ -217,11 +219,10 @@ public class ErrorSimulator implements Runnable {
 				ioe.printStackTrace();
 				System.exit(1);
 			}
-		} else if (packetType.equals("data") && whatDo == 7) {
-			System.out.println("Changing data packets opcode...");
-			data[0] = 9;
-			data[1] = 9;
-			System.out.println("OPCODE changed to: " + data[0] + data[1]);
+		}else if(whatDo == 7) {
+			//if chosen to edit data packet, this if branch will run
+			//packet received from client will just be forwarded so the data packet from the server can be later altered
+			System.out.println("Option to change data packets chosen.");
 			try {
 				sendPacket = new DatagramPacket(data, receivePacket.getLength(), InetAddress.getLocalHost(), server1Port);
 				System.out.println("Forwarding packet to server on port " + sendPacket.getPort());
@@ -239,18 +240,36 @@ public class ErrorSimulator implements Runnable {
 			// receive response from server
 			data = new byte[516];
 			receivePacket = new DatagramPacket(data, data.length);
-
 			System.out.println("Receiving...");
 			sendReceiveSocket.receive(receivePacket);
 			System.out.println("Packet received from server on port " + receivePacket.getPort());
 			server1Port = receivePacket.getPort();
 
-			// forward packet to client
-			sendPacket = new DatagramPacket(data, receivePacket.getLength(), clientAddress, clientPort);
-			System.out.println("Forwarding packet back to client...");
-			sendReceiveSocket.send(sendPacket);
-			System.out.println("Packet forwarded. \n");
+			//get the type of packet thats been received from the server
+			packetType = getPacketType(data);
 
+			if (packetType.equals("data") && whatDo == 7) {
+				//if chosen to edit data packet, this if branch will run
+				System.out.println("Changing data packets opcode...");
+				data[0] = 9;
+				data[1] = 9;
+				System.out.println("OPCODE changed to: " + data[0] + data[1]);
+				try {
+					sendPacket = new DatagramPacket(data, receivePacket.getLength(), clientAddress, clientPort);
+					System.out.println("Forwarding packet to client on port " + sendPacket.getPort());
+					sendReceiveSocket.send(sendPacket);
+					System.out.println("Packet forwarded.");
+				} catch (IOException ioe) {
+					ioe.printStackTrace();
+					System.exit(1);
+				}
+			}else {
+				// forward packet to client
+				sendPacket = new DatagramPacket(data, receivePacket.getLength(), clientAddress, clientPort);
+				System.out.println("Forwarding packet back to client...");
+				sendReceiveSocket.send(sendPacket);
+				System.out.println("Packet forwarded. \n");
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.exit(1);
@@ -258,7 +277,7 @@ public class ErrorSimulator implements Runnable {
 
 	}
 
-	public String extractFileName(byte[] data, int dataLength) {
+	private String extractFileName(byte[] data, int dataLength) {
 		int i = 1;
 		StringBuilder sb = new StringBuilder();
 		while (data[++i] != 0 && i < dataLength) {
