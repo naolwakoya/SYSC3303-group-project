@@ -1,5 +1,5 @@
 
-`Iteration #2 Team 4`
+`Iteration #4 Team 4`
 ***Carleton University
 Department of Systems and Computer Engineering
 SYSC3303 Real Time Concurrent System - Summer 2018****
@@ -38,11 +38,15 @@ Code (.java files, all required Eclipse files, etc.)
 
 
 ##Instruction to Run
+Please place files to write in the clientFiles folder
+and files to read in the serverFiles folder.
+Files that are read from the server and read from the serverFiles folder and transferred into the clientFiles folder.
+Files that are written from the client to the server are written from the clientFiles folder to the serverFiles folder.
+To start:
 1. Start Server
   2. Start ErrorSimulator (not necessary if in normal mode but won't affect program)
     3. Start Client
-      To test the client in test mode you must supply the command line argument serverFiles
-      If you need help for the command type "help" on the Console
+    	-Type in one of available commands
 
 
 #Issue

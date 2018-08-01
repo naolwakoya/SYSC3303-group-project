@@ -4,10 +4,12 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 
 public class TftpClientConnectionThread implements Runnable {
 	DatagramSocket sendReceiveSocket;
-	DatagramPacket sendPacket, receivePacket;
+	int resendAttempts = 3;
+	DatagramPacket sendPacket, receivePacket, resendPacket;
 	TftpData validData = new TftpData();
 	TftpAck validAck = new TftpAck();
 	String fileName;
@@ -48,6 +50,7 @@ public class TftpClientConnectionThread implements Runnable {
 		try {
 			// Send acknowledgement packet
 			TftpAck ack = new TftpAck(0);
+			resendPacket = ack.generatePacket(destinationAddress, port);
 			try {
 				sendReceiveSocket.send(ack.generatePacket(destinationAddress, port));
 			} catch (IOException e) {
@@ -76,7 +79,13 @@ public class TftpClientConnectionThread implements Runnable {
 			int blockNumber = 1;
 			do {
 				try {
-					this.receive();
+					try {
+						this.receiveExpected(blockNumber);
+					} catch (Exception e1) {
+						outputStream.close();
+						System.out.println("Exception: " + e1.getMessage());
+						return;
+					}
 					// Check if it is an error packet
 					if (receivePacket.getData()[1] == 5) {
 						outputStream.close();
@@ -107,6 +116,7 @@ public class TftpClientConnectionThread implements Runnable {
 					}
 					// Send acknowledgement packet
 					ack = new TftpAck(blockNumber);
+					resendPacket = ack.generatePacket(destinationAddress, port);
 					try {
 						sendReceiveSocket.send(ack.generatePacket(destinationAddress, port));
 						blockNumber++;
@@ -183,6 +193,7 @@ public class TftpClientConnectionThread implements Runnable {
 					data = new byte[0];
 				}
 				dataPacket = new TftpData(blockNumber, data, nRead);
+				resendPacket = dataPacket.generatePacket(destinationAddress, port);
 				try {
 					sendReceiveSocket.send(dataPacket.generatePacket(destinationAddress, port));
 				} catch (IOException e1) {
@@ -190,7 +201,13 @@ public class TftpClientConnectionThread implements Runnable {
 					System.exit(1);
 				}
 
-				this.receive();
+				try {
+					this.receiveExpected(blockNumber);
+				} catch (Exception e) {
+					inputStream.close();
+					System.out.println("Exception: " + e.getMessage());
+					return;
+				}
 				// Check if it is an error packet
 				if (receivePacket.getData()[1] == 5) {
 					inputStream.close();
@@ -254,6 +271,68 @@ public class TftpClientConnectionThread implements Runnable {
 		System.out.println("Containing: " + receivePacket.getData().toString());
 		String received = new String(receivePacket.getData(), 0, receivePacket.getLength());
 		System.out.println("String form: " + received + "\n");
+	}
+	
+	public void receiveExpected(int blockNumber) throws Exception {
+		int timeouts = 0;
+		try {
+			while (true) {
+				try {
+					this.receive();
+					// Check if it is a data packet
+					if (receivePacket.getData()[1] == 3) {
+						if (receivePacket.getData()[3] == blockNumber) {
+							return;
+						} else if (receivePacket.getData()[3] < blockNumber) {
+							// Received an old data packets, so we are echoing
+							// the ack
+							TftpAck ack = new TftpAck(receivePacket.getData()[3]);
+							sendPacket = ack.generatePacket(receivePacket.getAddress(), port);
+							System.out.println("\nClient: Sending ACK packet in response to duplicate data");
+							System.out.println("Block#: " + sendPacket.getData()[2] + sendPacket.getData()[3]);
+							sendReceiveSocket.send(sendPacket);
+
+						} else {
+							// Received a future block which is invalid
+							TftpError error = new TftpError(4, "Invalid block number");
+							sendReceiveSocket
+									.send(error.generatePacket(receivePacket.getAddress(), receivePacket.getPort()));
+						}
+					// Check to see if it is an ack packet
+					} else if (receivePacket.getData()[1] == 4) {
+						if (receivePacket.getData()[3] == blockNumber) {
+							return;
+						} else if (receivePacket.getData()[3] > blockNumber) {
+							// Received a future block which is invalid
+							TftpError error = new TftpError(4, "Invalid block number");
+							sendReceiveSocket
+									.send(error.generatePacket(receivePacket.getAddress(), receivePacket.getPort()));
+						}
+					} else if (receivePacket.getData()[1] == 5) {
+						if (receivePacket.getData()[3] != 5)
+							throw new Exception("Stopping data transfer");
+					} else if (receivePacket.getData()[1] == 1 || receivePacket.getData()[1] == 2) {
+						throw new Exception("Received request packet during data transfer");
+					}
+				} catch (SocketTimeoutException e) {
+					if (timeouts >= resendAttempts) {
+						throw new Exception("Connection timed out");
+					}
+					timeouts++;
+					resendLastPacket();
+				}
+			}
+		} catch (IOException e) {
+			throw new Exception(e.getMessage());
+		}
+	}
+	
+	private void resendLastPacket() throws Exception{
+		try {
+			sendReceiveSocket.send(resendPacket);
+		} catch (IOException e){
+			throw new Exception(e.getMessage());
+		}
 	}
 
 	/*

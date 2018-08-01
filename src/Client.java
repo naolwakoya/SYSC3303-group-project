@@ -13,9 +13,11 @@ public class Client {
 	int REQUEST_PORT = 69;
 	int sourceTID, destinationTID;
 
+	int resendAttempts = 3;
+
 	DatagramSocket sendReceiveSocket;
 	DatagramPacket receivePacket;
-	DatagramPacket sendPacket;
+	DatagramPacket sendPacket, resendPacket;
 
 	TftpAck validAck = new TftpAck();
 	TftpData validData = new TftpData();
@@ -50,6 +52,7 @@ public class Client {
 		TftpRequest req = new TftpRequest(fileName, request);
 		try {
 			sendPacket = req.generatePacket(InetAddress.getLocalHost(), REQUEST_PORT);
+			resendPacket = sendPacket;
 		} catch (UnknownHostException e1) {
 			e1.printStackTrace();
 		}
@@ -67,8 +70,21 @@ public class Client {
 			e.printStackTrace();
 			System.exit(1);
 		}
-
-		this.receive();
+		
+		if (request.equals("read")){
+			try {
+				this.receiveExpected(1);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		else if (request.equals("write")){
+			try {
+				this.receiveExpected(0);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
 		// Check if it is an error packet
 		if (receivePacket.getData()[1] == 5) {
 			printError(receivePacket.getData(), receivePacket.getLength());
@@ -78,20 +94,18 @@ public class Client {
 			if (!validAck.validateFormat(receivePacket.getData(), receivePacket.getLength())) {
 				TftpError error = new TftpError(4, "Invalid ack packet");
 				sendReceiveSocket.send(error.generatePacket(receivePacket.getAddress(), receivePacket.getPort()));
-			}
-			else {
+			} else {
 				connected = true;
 				destinationTID = receivePacket.getPort();
 				System.out.println("Connected to server.");
 			}
 		}
-		//Check if it is a valid data packet
+		// Check if it is a valid data packet
 		else if (receivePacket.getData()[1] == 3) {
 			if (!validData.validateFormat(receivePacket.getData(), receivePacket.getLength())) {
 				TftpError error = new TftpError(4, "Invalid data packet");
 				sendReceiveSocket.send(error.generatePacket(receivePacket.getAddress(), receivePacket.getPort()));
-			}
-			else {
+			} else {
 				connected = true;
 				destinationTID = receivePacket.getPort();
 				System.out.println("Connected to server.");
@@ -132,6 +146,7 @@ public class Client {
 				}
 				dataPacket = new TftpData(blockNumber, data, nRead);
 				sendPacket = dataPacket.generatePacket(receivePacket.getAddress(), destinationTID);
+				resendPacket = sendPacket;
 				System.out.println("\nClient: Sending DATA packet");
 				System.out.println("Block#: " + sendPacket.getData()[2] + sendPacket.getData()[3]);
 
@@ -146,7 +161,14 @@ public class Client {
 					System.exit(1);
 				}
 
-				this.receive();
+				try {
+					this.receiveExpected(blockNumber);
+				} catch (Exception e) {
+					connected = false;
+					inputStream.close();
+					System.out.println(e.getMessage());
+					return;
+				}
 				// Check if it is an error packet
 				if (receivePacket.getData()[1] == 5) {
 					printError(receivePacket.getData(), receivePacket.getLength());
@@ -169,8 +191,7 @@ public class Client {
 					inputStream.close();
 					connected = false;
 					return;
-				} 
-					
+				}
 				printAck(receivePacket.getData());
 				blockNumber++;
 
@@ -228,6 +249,7 @@ public class Client {
 			// Send acknowledgement packet
 			TftpAck ack = new TftpAck(blockNumber);
 			sendPacket = ack.generatePacket(receivePacket.getAddress(), destinationTID);
+			resendPacket = sendPacket;
 			System.out.println("\nClient: Sending ACK packet");
 			System.out.println("Block#: " + sendPacket.getData()[2] + sendPacket.getData()[3]);
 
@@ -244,7 +266,14 @@ public class Client {
 				System.exit(1);
 			}
 			do {
-				this.receive();
+				try {
+					this.receiveExpected(blockNumber);
+				} catch (Exception e1) {
+					connected = false;
+					outputStream.close();
+					System.out.println(e1.getMessage());
+					return;
+				}
 				// Check if it is an error packet
 				if (receivePacket.getData()[1] == 5) {
 					printError(receivePacket.getData(), receivePacket.getLength());
@@ -283,6 +312,7 @@ public class Client {
 					// Send acknowledgement packet
 					ack = new TftpAck(blockNumber);
 					sendPacket = ack.generatePacket(receivePacket.getAddress(), destinationTID);
+					resendPacket = sendPacket;
 					System.out.println("\nClient: Sending ACK packet");
 					System.out.println("Block#: " + sendPacket.getData()[2] + sendPacket.getData()[3]);
 
@@ -332,6 +362,69 @@ public class Client {
 		if (verbose) {
 			System.out.println("Received packet:");
 			printPacketInformation(receivePacket);
+		}
+	}
+
+	public void receiveExpected(int blockNumber) throws Exception {
+		int timeouts = 0;
+		try {
+			while (true) {
+				try {
+					this.receive();
+					// Check if it is a data packet
+					if (receivePacket.getData()[1] == 3) {
+						if (receivePacket.getData()[3] == blockNumber) {
+							return;
+						} else if (receivePacket.getData()[3] < blockNumber) {
+							// Received an old data packets, so we are echoing
+							// the ack
+							TftpAck ack = new TftpAck(receivePacket.getData()[3]);
+							sendPacket = ack.generatePacket(receivePacket.getAddress(), destinationTID);
+							System.out.println("\nClient: Sending ACK packet in response to duplicate data");
+							System.out.println("Block#: " + sendPacket.getData()[2] + sendPacket.getData()[3]);
+							sendReceiveSocket.send(sendPacket);
+
+						} else {
+							// Received a future block which is invalid
+							TftpError error = new TftpError(4, "Invalid block number");
+							sendReceiveSocket
+									.send(error.generatePacket(receivePacket.getAddress(), receivePacket.getPort()));
+						}
+						// Check to see if it is an ack packet
+					} else if (receivePacket.getData()[1] == 4) {
+						if (receivePacket.getData()[3] == blockNumber) {
+							return;
+						} else if (receivePacket.getData()[3] > blockNumber) {
+							// Received a future block which is invalid
+							TftpError error = new TftpError(4, "Invalid block number");
+							sendReceiveSocket
+									.send(error.generatePacket(receivePacket.getAddress(), receivePacket.getPort()));
+						}
+					} else if (receivePacket.getData()[1] == 5) {
+						printError(receivePacket.getData(), receivePacket.getLength());
+						if (receivePacket.getData()[3] != 5)
+							throw new Exception("Stopping data transfer");
+					} else if (receivePacket.getData()[1] == 1 || receivePacket.getData()[1] == 2) {
+						throw new Exception("Received request packet during data transfer");
+					}
+				} catch (SocketTimeoutException e) {
+					if (timeouts >= resendAttempts) {
+						throw new Exception("Connection timed out");
+					}
+					timeouts++;
+					resendLastPacket();
+				}
+			}
+		} catch (IOException e) {
+			throw new Exception(e.getMessage());
+		}
+	}
+
+	private void resendLastPacket() throws Exception {
+		try {
+			sendReceiveSocket.send(resendPacket);
+		} catch (IOException e) {
+			throw new Exception(e.getMessage());
 		}
 	}
 
@@ -440,7 +533,7 @@ public class Client {
 				System.out.println("Client is shutting down");
 				s.close();
 				return;
-			} else if ((cmd[0].equals("read") || cmd[0].equals("write")) && cmd.length>1 && cmd[1].length() > 0) {
+			} else if ((cmd[0].equals("read") || cmd[0].equals("write")) && cmd.length > 1 && cmd[1].length() > 0) {
 				c.establishConnection(cmd[1], cmd[0]);
 				if (c.isConnected()) {
 					if (cmd[0].equals("read")) {
