@@ -3,85 +3,90 @@ import java.io.*;
 import java.net.*;
 import java.util.Scanner;
 
-public class ErrorSimulator{
+public class ErrorSimulator {
 	// instance variables
-	private DatagramSocket sendReceiveSocket;
+	private DatagramSocket sendReceiveSocket, receiveSocket;
 	private DatagramPacket receivePacket, sendPacket;
 
 	boolean isConnected = false;
 
 	InetAddress clientAddress;
-	int clientPort;
+	int clientPort, serverPort;
 
 	int proxyPort = 23;
-	int server1Port = 69;
+	int serverRequestPort = 69;
 
 	boolean actionPerformed = false;
 
-	Scanner input;
-
-	public void connect() {
-		// scanner to receive user input from prompts
-		input = new Scanner(System.in);
-
+	public ErrorSimulator() {
 		// create new datagram sockets for the client and server
 		try {
-			sendReceiveSocket = new DatagramSocket(proxyPort, InetAddress.getLocalHost());
-			System.out.println("Connected to client on port: " + sendReceiveSocket.getLocalPort());
+			receiveSocket = new DatagramSocket(proxyPort, InetAddress.getLocalHost());
 		} catch (IOException se) {
 			se.printStackTrace();
 			System.exit(1);
 		}
-		isConnected = true;
 	}
 
 	public void run() {
-		//if no connection has been established, the connect method will run
-		if (isConnected == false) {
-			connect();
+		this.receiveRequest();
+		//Set the source TID 
+		clientPort = receivePacket.getPort();
+
+		try {
+			sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), InetAddress.getLocalHost(),
+					serverRequestPort);
+			System.out.println("Forwarding packet to server on port " + sendPacket.getPort());
+			sendReceiveSocket.send(sendPacket);
+			System.out.println("Packet forwarded.");
+		} catch (IOException ioe) {
+			ioe.printStackTrace();
+			System.exit(1);
 		}
-		while (true) {
-			forward();
+		
+		this.receive();
+		//Set the destination TID
+		serverPort = receivePacket.getPort();
+		// Forward the packet to the client 
+		try {
+			sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), InetAddress.getLocalHost(),
+					clientPort);
+			System.out.println("Forwarding packet to client on port " + sendPacket.getPort());
+			sendReceiveSocket.send(sendPacket);
+			System.out.println("Packet forwarded.");
+		} catch (IOException ioe) {
+			ioe.printStackTrace();
+			System.exit(1);
 		}
-	}
-
-	// asks the user what type of operation to perform
-	public int getOperation() {
-		int response = 9;
-		System.out.println("What would you like change?");
-		System.out.println("(0): normal operation");
-		System.out.println("(1): request packets");
-		System.out.println("(2): data packets");
-		System.out.println("(3): ack packets");
-
-		response = input.nextInt();
-
-		System.out.println("\n");
-
-		if (response == 0) {
-			// do nothing
-			System.out.println("(0): Confirm do nothing");
-		} else if (response == 1) {
-			System.out.println("(1)Request packets chosen.");
-			System.out.println("What would you like to do to the request packets?");
-			System.out.println("(4): change opcode");
-			System.out.println("(5): change fileName");
-			System.out.println("(6): change mode");
-		} else if (response == 2) {
-			System.out.println("(2)Data Packets chosen.");
-			System.out.println("What would you like to do to the Data packets?");
-			System.out.println("(7): change opcode");
-			System.out.println("(8): change block number");
-		} else if (response == 3) {
-			System.out.println("(3)Acknowledgement Packets chosen.");
-			System.out.println("What would you like to do to the Ack packets?");
-			System.out.println("(9):  change opcode");
-			System.out.println("(10): change block number");
+		
+		while(true) {
+			this.receive();
+			// Forward the packet to the server
+			try {
+				sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), InetAddress.getLocalHost(),
+						serverPort);
+				System.out.println("Forwarding packet to server on port " + sendPacket.getPort());
+				sendReceiveSocket.send(sendPacket);
+				System.out.println("Packet forwarded.");
+			} catch (IOException ioe) {
+				ioe.printStackTrace();
+				System.exit(1);
+			}
+			
+			this.receive();
+			// Forward the packet to the client
+			try {
+				sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), InetAddress.getLocalHost(),
+						clientPort);
+				System.out.println("Forwarding packet to client on port " + sendPacket.getPort());
+				sendReceiveSocket.send(sendPacket);
+				System.out.println("Packet forwarded.");
+			} catch (IOException ioe) {
+				ioe.printStackTrace();
+				System.exit(1);
+			}
 		}
 
-		response = input.nextInt();
-
-		return response;
 	}
 
 	// method to return the type of packet received
@@ -96,44 +101,57 @@ public class ErrorSimulator{
 		return "error";
 	}
 
-	private void forward() {
-		// create byte array to hold packet to be received
-		byte[] data = new byte[516];
-
-		// create packet to receive data from client
-		receivePacket = new DatagramPacket(data, data.length);
+	public void receive() {
+		// Create a DatagramPacket for receiving packets
+		byte receive[] = new byte[516];
+		receivePacket = new DatagramPacket(receive, receive.length);
 
 		try {
-			// receive packet from client
-			// receive() method blocks until datagram is received, data is now
-			// populated with recievd packet
-			System.out.println("Receiving...");
+			// Block until a datagram is received via sendReceiveSocket.
 			sendReceiveSocket.receive(receivePacket);
-			clientAddress = receivePacket.getAddress();
-			clientPort = receivePacket.getPort();
-			System.out.println("Packet received from client");
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.exit(1);
 		}
+	}
+
+	public void receiveRequest() {
+		// Create a DatagramPacket for receiving packets
+		byte receive[] = new byte[516];
+		receivePacket = new DatagramPacket(receive, receive.length);
+
+		try {
+			// Block until a datagram is received via receiveSocket.
+			receiveSocket.receive(receivePacket);
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
+	}
+
+	private void forward() {
+
+		this.receive();
 
 		System.out.println("\n");
 
 		String packetType = "";
 		int whatDo = 0; // default action (do nothing)
-		//if no user input has been set, it will enter this if statement and ask the user what they want to do
+		// if no user input has been set, it will enter this if statement and ask the
+		// user what they want to do
 		if (!actionPerformed) {
 			packetType = getPacketType(data);
 			whatDo = getOperation();
 			actionPerformed = true;
 		}
 
-		//receive packet from client and decide what to do with it.
+		// receive packet from client and decide what to do with it.
 		if (whatDo == 0) {
 			// no nothing, simply forward packet thats been received
 			System.out.println("Forwarding packet without altering it");
 			try {
-				sendPacket = new DatagramPacket(data, receivePacket.getLength(), InetAddress.getLocalHost(), server1Port);
+				sendPacket = new DatagramPacket(data, receivePacket.getLength(), InetAddress.getLocalHost(),
+						serverRequestPort);
 				System.out.println("Forwarding packet to server on port " + sendPacket.getPort());
 				sendReceiveSocket.send(sendPacket);
 				System.out.println("Packet forwarded.");
@@ -149,7 +167,8 @@ public class ErrorSimulator{
 			data[1] = 9;
 			System.out.println("OPCODE changed to: " + data[0] + data[1]);
 			try {
-				sendPacket = new DatagramPacket(data, receivePacket.getLength(), InetAddress.getLocalHost(), server1Port);
+				sendPacket = new DatagramPacket(data, receivePacket.getLength(), InetAddress.getLocalHost(),
+						serverRequestPort);
 				System.out.println("Forwarding packet to server on port " + sendPacket.getPort());
 				sendReceiveSocket.send(sendPacket);
 				System.out.println("Packet forwarded.");
@@ -181,7 +200,8 @@ public class ErrorSimulator{
 
 			// put byteArray into packet and forward to server
 			try {
-				sendPacket = new DatagramPacket(msg, receivePacket.getLength(), InetAddress.getLocalHost(), server1Port);
+				sendPacket = new DatagramPacket(msg, receivePacket.getLength(), InetAddress.getLocalHost(),
+						serverRequestPort);
 				System.out.println("Forwardging packet to server on port " + sendPacket.getPort());
 				sendReceiveSocket.send(sendPacket);
 				System.out.println("Packet forwarded");
@@ -190,7 +210,7 @@ public class ErrorSimulator{
 				System.exit(1);
 			}
 		} else if (packetType.equals("request") && whatDo == 6) {
-			//takes the request packet and alters the mode
+			// takes the request packet and alters the mode
 			System.out.println("option to change request packet's mode has been chosen");
 			System.out.println("Altering mode of request packet...");
 			System.out.println("Changing mode to: randomMode");
@@ -212,7 +232,8 @@ public class ErrorSimulator{
 
 			// put byteArray into packet and forward to server
 			try {
-				sendPacket = new DatagramPacket(msg, receivePacket.getLength(), InetAddress.getLocalHost(), server1Port);
+				sendPacket = new DatagramPacket(msg, receivePacket.getLength(), InetAddress.getLocalHost(),
+						serverRequestPort);
 				System.out.println("Forwardging packet to server on port " + sendPacket.getPort());
 				sendReceiveSocket.send(sendPacket);
 				System.out.println("Packet forwarded.");
@@ -220,12 +241,14 @@ public class ErrorSimulator{
 				ioe.printStackTrace();
 				System.exit(1);
 			}
-		}else if(whatDo == 7) {
-			//if chosen to edit data packet, this if branch will run
-			//packet received from client will just be forwarded so the data packet from the server can be later altered
+		} else if (whatDo == 7) {
+			// if chosen to edit data packet, this if branch will run
+			// packet received from client will just be forwarded so the data packet from
+			// the server can be later altered
 			System.out.println("Option to change data packets chosen.");
 			try {
-				sendPacket = new DatagramPacket(data, receivePacket.getLength(), InetAddress.getLocalHost(), server1Port);
+				sendPacket = new DatagramPacket(data, receivePacket.getLength(), InetAddress.getLocalHost(),
+						serverRequestPort);
 				System.out.println("Forwarding packet to server on port " + sendPacket.getPort());
 				sendReceiveSocket.send(sendPacket);
 				System.out.println("Packet forwarded.");
@@ -244,13 +267,13 @@ public class ErrorSimulator{
 			System.out.println("Receiving...");
 			sendReceiveSocket.receive(receivePacket);
 			System.out.println("Packet received from server on port " + receivePacket.getPort());
-			server1Port = receivePacket.getPort();
+			serverRequestPort = receivePacket.getPort();
 
-			//get the type of packet thats been received from the server
+			// get the type of packet thats been received from the server
 			packetType = getPacketType(data);
 
 			if (packetType.equals("data") && whatDo == 7) {
-				//if chosen to edit data packet, this if branch will run
+				// if chosen to edit data packet, this if branch will run
 				System.out.println("Changing data packets opcode...");
 				data[0] = 9;
 				data[1] = 9;
@@ -264,7 +287,7 @@ public class ErrorSimulator{
 					ioe.printStackTrace();
 					System.exit(1);
 				}
-			}else {
+			} else {
 				// forward packet to client
 				sendPacket = new DatagramPacket(data, receivePacket.getLength(), clientAddress, clientPort);
 				System.out.println("Forwarding packet back to client...");
@@ -288,11 +311,44 @@ public class ErrorSimulator{
 		return sb.toString();
 	}
 
-
 	public static void main(String[] args) {
-		ErrorSimulator er1 = new ErrorSimulator();
-		er1.run();
+		Scanner s = new Scanner(System.in);
+		ErrorSimulator er = new ErrorSimulator();
+		System.out.println("Error Simulator");
+		int input;
 
+		while (true) {
+			System.out.println("What would you like change?");
+			System.out.println("(0): normal operation");
+			System.out.println("(1): lose a packet");
+			System.out.println("(2): delay a packet");
+			System.out.println("(3): duplicate a packet");
+
+			System.out.println("\n");
+			input = s.nextInt();
+
+			if (input == 0) {
+				// do nothing
+				System.out.println("(0): Confirm do nothing");
+				er.run();
+			} else if (input == 1) {
+				System.out.println("(1)Request packets chosen.");
+				System.out.println("What would you like to do to the request packets?");
+				System.out.println("(4): change opcode");
+				System.out.println("(5): change fileName");
+				System.out.println("(6): change mode");
+			} else if (input == 2) {
+				System.out.println("(2)Data Packets chosen.");
+				System.out.println("What would you like to do to the Data packets?");
+				System.out.println("(7): change opcode");
+				System.out.println("(8): change block number");
+			} else if (input == 3) {
+				System.out.println("(3)Acknowledgement Packets chosen.");
+				System.out.println("What would you like to do to the Ack packets?");
+				System.out.println("(9):  change opcode");
+				System.out.println("(10): change block number");
+			}
+		}
 	}
 
 }
