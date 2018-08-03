@@ -13,8 +13,8 @@ public class ErrorSimulator {
 	InetAddress clientAddress;
 	int clientPort, serverPort;
 
-	int proxyPort = 23;
-	int serverRequestPort = 69;
+	int proxyPort = 8080;
+	int serverRequestPort = 8081;
 
 	boolean actionPerformed = false;
 
@@ -43,7 +43,7 @@ public class ErrorSimulator {
 			ioe.printStackTrace();
 			System.exit(1);
 		}
-		
+
 		this.receive();
 		//Set the destination TID
 		serverPort = receivePacket.getPort();
@@ -58,7 +58,7 @@ public class ErrorSimulator {
 			ioe.printStackTrace();
 			System.exit(1);
 		}
-		
+
 		while(true) {
 			this.receive();
 			// Forward the packet to the server
@@ -72,7 +72,7 @@ public class ErrorSimulator {
 				ioe.printStackTrace();
 				System.exit(1);
 			}
-			
+
 			this.receive();
 			// Forward the packet to the client
 			try {
@@ -300,6 +300,11 @@ public class ErrorSimulator {
 		}
 
 	}
+
+	private int getOperation() {
+		return;
+	}
+
 
 	private String extractFileName(byte[] data, int dataLength) {
 		int i = 1;
