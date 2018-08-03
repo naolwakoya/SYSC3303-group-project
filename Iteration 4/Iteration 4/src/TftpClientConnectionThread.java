@@ -32,7 +32,6 @@ public class TftpClientConnectionThread implements Runnable {
 
 	@Override
 	public void run() {
-		System.out.println("its in the RUN");
 		if (isReadRequest) {
 			fileName = extractFileName(receivePacket.getData(), receivePacket.getData().length);
 			sendFile();

@@ -12,8 +12,8 @@ public class ErrorSimulator{
 	InetAddress clientAddress;
 	int clientPort;
 
-	int proxyPort = 23;
-	int server1Port = 69;
+	int proxyPort = 8081;
+	int server1Port = 8082;
 
 	boolean actionPerformed = false;
 
@@ -274,7 +274,7 @@ public class ErrorSimulator{
 			e.printStackTrace();
 			System.exit(1);
 		}
-
+		 actionPerformed = false;
 	}
 
 	private String extractFileName(byte[] data, int dataLength) {
