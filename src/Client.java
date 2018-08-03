@@ -10,7 +10,7 @@ import java.util.Scanner;
 
 public class Client {
 
-	int REQUEST_PORT = 69;
+	int REQUEST_PORT = 8081;
 	int sourceTID, destinationTID;
 
 	int resendAttempts = 3;
@@ -44,7 +44,7 @@ public class Client {
 		try {
 
 			sendReceiveSocket = new DatagramSocket();
-			sendReceiveSocket.setSoTimeout(2000);
+			sendReceiveSocket.setSoTimeout(10000);
 		} catch (SocketException se) {
 			se.printStackTrace();
 			System.exit(1);
@@ -71,7 +71,7 @@ public class Client {
 			e.printStackTrace();
 			System.exit(1);
 		}
-		
+
 		if (request.equals("read")){
 			try {
 				this.receiveExpected(1);
@@ -583,10 +583,10 @@ public class Client {
 	public void toggleTest() {
 		if (test) {
 			test = false;
-			REQUEST_PORT = 69;
+			REQUEST_PORT = 8081;
 		} else {
 			test = true;
-			REQUEST_PORT = 23;
+			REQUEST_PORT = 8081;
 		}
 	}
 
