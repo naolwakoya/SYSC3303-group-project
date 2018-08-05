@@ -11,11 +11,11 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="FileEditorManager">
-    <leaf SIDE_TABS_SIZE_LIMIT_KEY="251">
+    <leaf SIDE_TABS_SIZE_LIMIT_KEY="281">
       <file leaf-file-name="Client.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Iteration 4/Iteration 4/src/Client.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="425">
+            <state relative-caret-position="-5081">
               <caret line="230" column="17" selection-start-line="230" selection-start-column="17" selection-end-line="230" selection-end-column="17" />
               <folding>
                 <element signature="imports" expanded="true" />
@@ -30,16 +30,19 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="ErrorSimulator.java" pinned="false" current-in-tab="true">
+      <file leaf-file-name="ErrorSimulator.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Iteration 4/Iteration 4/src/ErrorSimulator.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="164">
-              <caret line="71" column="18" selection-start-line="71" selection-start-column="18" selection-end-line="71" selection-end-column="18" />
+            <state relative-caret-position="4350">
+              <caret line="290" column="1" selection-start-line="290" selection-start-column="1" selection-end-line="290" selection-end-column="1" />
+              <folding>
+                <element signature="imports" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="TftpServer.java" pinned="false" current-in-tab="false">
+      <file leaf-file-name="TftpServer.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Iteration 4/Iteration 4/src/TftpServer.java">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="1035">
@@ -87,8 +90,8 @@
       <list>
         <option value="$PROJECT_DIR$/Iteration 4/Iteration 4/src/TftpServer.java" />
         <option value="$PROJECT_DIR$/Iteration 4/Iteration 4/src/TftpClientConnectionThread.java" />
-        <option value="$PROJECT_DIR$/Iteration 4/Iteration 4/src/ErrorSimulator.java" />
         <option value="$PROJECT_DIR$/Iteration 4/Iteration 4/src/Client.java" />
+        <option value="$PROJECT_DIR$/Iteration 4/Iteration 4/src/ErrorSimulator.java" />
       </list>
     </option>
   </component>
@@ -101,9 +104,9 @@
   <component name="NodePackageJsonFileManager">
     <packageJsonPaths />
   </component>
-  <component name="ProjectFrameBounds" extendedState="6">
-    <option name="width" value="1920" />
-    <option name="height" value="1080" />
+  <component name="ProjectFrameBounds" fullScreen="true">
+    <option name="width" value="1280" />
+    <option name="height" value="800" />
   </component>
   <component name="ProjectView">
     <navigator proportions="" version="1">
@@ -233,20 +236,20 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1533259506689</updated>
-      <workItem from="1533259512336" duration="7878000" />
+      <workItem from="1533259512336" duration="11225000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="7878000" />
+    <option name="totallyTimeSpent" value="11225000" />
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="23" width="1920" height="1057" extended-state="6" />
+    <frame x="0" y="0" width="1280" height="800" extended-state="0" />
     <editor active="true" />
     <layout>
       <window_info anchor="right" id="Palette" order="5" />
       <window_info anchor="bottom" id="TODO" order="11" />
-      <window_info anchor="bottom" id="Messages" order="4" />
+      <window_info anchor="bottom" id="Messages" order="4" visible="true" weight="0.2275" />
       <window_info anchor="right" id="Palette&#9;" order="1" />
       <window_info id="Image Layers" order="4" />
       <window_info anchor="right" id="Capture Analysis" order="0" />
@@ -254,11 +257,11 @@
       <window_info anchor="right" id="Maven Projects" order="4" />
       <window_info anchor="bottom" id="Database Changes" order="0" show_stripe_button="false" />
       <window_info anchor="bottom" id="Version Control" order="3" show_stripe_button="false" />
-      <window_info anchor="bottom" id="Run" order="7" visible="true" weight="0.3294686" />
+      <window_info anchor="bottom" id="Run" order="7" weight="0.3294686" />
       <window_info anchor="bottom" id="Terminal" order="1" />
       <window_info id="Capture Tool" order="2" />
       <window_info id="Designer" order="0" />
-      <window_info content_ui="combo" id="Project" order="5" visible="true" weight="0.25" />
+      <window_info content_ui="combo" id="Project" order="5" visible="true" weight="0.1125" />
       <window_info anchor="right" id="Database" order="3" />
       <window_info id="Structure" order="6" side_tool="true" weight="0.25" />
       <window_info anchor="right" id="Ant Build" order="7" weight="0.25" />
@@ -295,19 +298,9 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Iteration 4/Iteration 4/src/TftpServer.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1035">
-          <caret line="69" column="41" lean-forward="true" selection-start-line="69" selection-start-column="41" selection-end-line="69" selection-end-column="41" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/Iteration 4/Iteration 4/src/Client.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="425">
+        <state relative-caret-position="-5081">
           <caret line="230" column="17" selection-start-line="230" selection-start-column="17" selection-end-line="230" selection-end-column="17" />
           <folding>
             <element signature="imports" expanded="true" />
@@ -323,8 +316,21 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/Iteration 4/Iteration 4/src/ErrorSimulator.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="164">
-          <caret line="71" column="18" selection-start-line="71" selection-start-column="18" selection-end-line="71" selection-end-column="18" />
+        <state relative-caret-position="4350">
+          <caret line="290" column="1" selection-start-line="290" selection-start-column="1" selection-end-line="290" selection-end-column="1" />
+          <folding>
+            <element signature="imports" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Iteration 4/Iteration 4/src/TftpServer.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1035">
+          <caret line="69" column="41" lean-forward="true" selection-start-line="69" selection-start-column="41" selection-end-line="69" selection-end-column="41" />
+          <folding>
+            <element signature="imports" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
