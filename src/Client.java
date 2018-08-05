@@ -536,7 +536,7 @@ public class Client {
 					System.out.println("Client is now in normal mode");
 			} else if (cmd[0].equals("host")) {
 				System.out.println("server: " + c.getServerAddress() +" port: " + c.getPort());
-			} else if (cmd[0].equals("server")) {
+			} else if ((cmd[0].equals("server"))){
 				System.out.println("Enter the ip or hostname");
 				input = s.nextLine().toLowerCase();
 				c.setServerAddress(InetAddress.getByName(input));
@@ -562,7 +562,7 @@ public class Client {
 	}
 
 	public String getServerAddress() {
-		return serverAddress.getHostAddress();
+		return serverAddress.getHostName() +"/" + serverAddress.getHostAddress();
 	}
 	
 	public int getPort() {
