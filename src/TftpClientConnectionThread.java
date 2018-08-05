@@ -254,7 +254,7 @@ public class TftpClientConnectionThread implements Runnable {
 							if (!validData.validateFormat(receivePacket.getData(), receivePacket.getLength())) {
 								TftpError error = new TftpError(4, "Invalid data packet");
 								sendReceiveSocket
-										.send(error.generatePacket(receivePacket.getAddress(), sourceTID));
+										.send(error.generatePacket(destinationAddress, sourceTID));
 								throw new TftpException("Received an invalid data packet");
 							} else {
 								return;
@@ -263,14 +263,14 @@ public class TftpClientConnectionThread implements Runnable {
 							// Received an old data packets, so we are echoing
 							// the ack
 							TftpAck ack = new TftpAck(receivePacket.getData()[3]);
-							sendPacket = ack.generatePacket(receivePacket.getAddress(), sourceTID);
+							sendPacket = ack.generatePacket(destinationAddress, sourceTID);
 							sendReceiveSocket.send(sendPacket);
 
 						} else {
 							// Received a future block which is invalid
 							TftpError error = new TftpError(4, "Invalid block number");
 							sendReceiveSocket
-									.send(error.generatePacket(receivePacket.getAddress(), sourceTID));
+									.send(error.generatePacket(destinationAddress, sourceTID));
 						}
 						// Check to see if it is an ack packet
 					} else if (receivePacket.getData()[1] == 4) {
@@ -279,7 +279,7 @@ public class TftpClientConnectionThread implements Runnable {
 							if (!validAck.validateFormat(receivePacket.getData(), receivePacket.getLength())) {
 								TftpError error = new TftpError(4, "Invalid ack packet");
 								sendReceiveSocket
-										.send(error.generatePacket(receivePacket.getAddress(), sourceTID));
+										.send(error.generatePacket(destinationAddress, sourceTID));
 								throw new TftpException("Received an invalid ack packet");
 							} else {
 								return;
@@ -288,7 +288,7 @@ public class TftpClientConnectionThread implements Runnable {
 							// Received a future block which is invalid
 							TftpError error = new TftpError(4, "Invalid block number");
 							sendReceiveSocket
-									.send(error.generatePacket(receivePacket.getAddress(), sourceTID));
+									.send(error.generatePacket(destinationAddress, sourceTID));
 						}
 					} else if (receivePacket.getData()[1] == 5) {
 						if (receivePacket.getData()[3] != 5)

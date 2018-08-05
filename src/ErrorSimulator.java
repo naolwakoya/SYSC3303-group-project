@@ -32,6 +32,7 @@ public class ErrorSimulator {
 		this.receiveRequest();
 		//Set the source TID 
 		clientPort = receivePacket.getPort();
+		clientAddress = receivePacket.getAddress();
 
 		try {
 			sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), InetAddress.getLocalHost(),
@@ -49,7 +50,7 @@ public class ErrorSimulator {
 		serverPort = receivePacket.getPort();
 		// Forward the packet to the client 
 		try {
-			sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), InetAddress.getLocalHost(),
+			sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), clientAddress,
 					clientPort);
 			System.out.println("Forwarding packet to client on port " + sendPacket.getPort());
 			sendReceiveSocket.send(sendPacket);
@@ -76,7 +77,7 @@ public class ErrorSimulator {
 			this.receive();
 			// Forward the packet to the client
 			try {
-				sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), InetAddress.getLocalHost(),
+				sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), clientAddress,
 						clientPort);
 				System.out.println("Forwarding packet to client on port " + sendPacket.getPort());
 				sendReceiveSocket.send(sendPacket);
