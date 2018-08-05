@@ -39,7 +39,6 @@ public class TftpData extends TftpPacket {
 			return false;
 		if (packetLength > data.length || packetLength < MIN_SIZE || packetLength > 516){
 			return false;
-
 		}
 		// Check the opcode
 		if ((data[0] != 0) && (data[1] != 3))

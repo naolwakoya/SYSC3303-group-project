@@ -8,6 +8,7 @@ import java.net.SocketTimeoutException;
 
 public class TftpClientConnectionThread implements Runnable {
 	DatagramSocket sendReceiveSocket;
+	TftpServer server;
 	int resendAttempts = 4;
 	DatagramPacket sendPacket, receivePacket, resendPacket;
 	TftpData validData = new TftpData();
@@ -18,9 +19,10 @@ public class TftpClientConnectionThread implements Runnable {
 	InetAddress destinationAddress;
 	int sourceTID;
 
-	public TftpClientConnectionThread(boolean isReadRequest, DatagramPacket receivePacket) {
+	public TftpClientConnectionThread(TftpServer server, boolean isReadRequest, DatagramPacket receivePacket) {
 
 		try {
+			this.server = server;
 			sendReceiveSocket = new DatagramSocket();
 			sendReceiveSocket.setSoTimeout(2000);
 		} catch (SocketException e) {
@@ -35,7 +37,7 @@ public class TftpClientConnectionThread implements Runnable {
 
 	@Override
 	public void run() {
-		System.out.println("its in the RUN");
+		server.incThreadCount();
 		if (isReadRequest) {
 			fileName = extractFileName(receivePacket.getData(), receivePacket.getData().length);
 			sendFile();
@@ -45,6 +47,7 @@ public class TftpClientConnectionThread implements Runnable {
 		}
 		// Close the sockets once complete
 		sendReceiveSocket.close();
+		server.decThreadCount();
 	}
 
 	public void receiveFile() {
@@ -129,7 +132,7 @@ public class TftpClientConnectionThread implements Runnable {
 					return;
 				}
 			} while (!(fileData.length < 512));
-			System.out.println("Done receiving file: " + fileName + " from client");
+			System.out.println("TRANSFER: Done receiving file: " + fileName + " from client");
 			outputStream.close();
 			
 		} catch (IOException e) {
@@ -205,7 +208,7 @@ public class TftpClientConnectionThread implements Runnable {
 
 			} while (nRead == 512);
 
-			System.out.println("Done sending file: " + fileName + " to client");
+			System.out.println("TRANSFER: Done sending file: " + fileName + " to client");
 			inputStream.close();
 
 		} catch (FileNotFoundException e) {
@@ -236,15 +239,6 @@ public class TftpClientConnectionThread implements Runnable {
 			e.printStackTrace();
 			System.exit(1);
 		}
-
-		// Process the received datagram
-		System.out.println("Received packet:");
-		System.out.println("From host: " + receivePacket.getAddress());
-		System.out.println("Host port: " + receivePacket.getPort());
-		System.out.println("Packet length: " + receivePacket.getLength());
-		System.out.println("Containing: " + receivePacket.getData().toString());
-		String received = new String(receivePacket.getData(), 0, receivePacket.getLength());
-		System.out.println("String form: " + received + "\n");
 	}
 	
 	public void receiveExpected(int blockNumber) throws Exception {
@@ -270,8 +264,6 @@ public class TftpClientConnectionThread implements Runnable {
 							// the ack
 							TftpAck ack = new TftpAck(receivePacket.getData()[3]);
 							sendPacket = ack.generatePacket(receivePacket.getAddress(), sourceTID);
-							System.out.println("\nClient: Sending ACK packet in response to duplicate data");
-							System.out.println("Block#: " + sendPacket.getData()[2] + sendPacket.getData()[3]);
 							sendReceiveSocket.send(sendPacket);
 
 						} else {

@@ -14,16 +14,19 @@ public class TftpServerControl implements Runnable {
 
 	@Override
 	public void run() {
+		server.incThreadCount();
 		String order;
 		while (server.serverOn) {
-			System.out.println("Write quit to close the Server");
+			System.out.println("Welcome to the Tftp Server");
+			System.out.println("Type quit to close the Server");
 			order = input.next();
 
 			if (order.equalsIgnoreCase(QUIT)) {
-				System.out.println("The Server is Shutting Down ");
-				server.serverOn = false;
 				server.getServerSocket().close();
+				server.serverOn = false;
+
 			}
 		}
+		server.decThreadCount();
 	}
 }
