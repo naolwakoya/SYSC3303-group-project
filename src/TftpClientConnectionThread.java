@@ -50,6 +50,9 @@ public class TftpClientConnectionThread implements Runnable {
 		server.decThreadCount();
 	}
 
+	/**
+	 * Receives a file from the client
+	 */
 	public void receiveFile() {
 		try {
 			// Send acknowledgement packet
@@ -142,7 +145,7 @@ public class TftpClientConnectionThread implements Runnable {
 		}
 	}
 
-	/*
+	/**
 	 * Sends the file to the client via tftp data packets
 	 */
 	public void sendFile() {
@@ -225,7 +228,7 @@ public class TftpClientConnectionThread implements Runnable {
 		}
 	}
 
-	/*
+	/**
 	 * Waits to receive a packet from the sendReceive socket
 	 */
 	public void receive() {
@@ -242,6 +245,12 @@ public class TftpClientConnectionThread implements Runnable {
 		}
 	}
 
+	/**
+	 * Waits to receive the expected packet
+	 * 
+	 * @param blockNumber
+	 * @throws Exception
+	 */
 	public void receiveExpected(int blockNumber) throws Exception {
 		int timeouts = 0;
 		try {
@@ -310,6 +319,11 @@ public class TftpClientConnectionThread implements Runnable {
 		}
 	}
 
+	/**
+	 * Resends the last packet sent
+	 * 
+	 * @throws Exception
+	 */
 	private void resendLastPacket() throws Exception {
 		try {
 			sendReceiveSocket.send(resendPacket);

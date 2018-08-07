@@ -1,8 +1,15 @@
 import java.io.ByteArrayOutputStream;
 
+/**
+ * Represents the TFTP Error packets
+ *
+ */
 public class TftpError extends TftpPacket {
 
+	//The minimum size of the TFTP error packet
 	private static final int MIN_LENGTH = 5;
+	
+	// The error code value
 	int errorCode = 0;
 	String errorMessage;
 
@@ -11,10 +18,18 @@ public class TftpError extends TftpPacket {
 		this.errorMessage = erroMessage;
 	}
 
+	/**
+	 * Returns the error code of the TFTP packet
+	 * @return
+	 */
 	public int getErrorCode() {
 		return this.errorCode;
 	}
 
+	/**
+	 * Returns the error message of the TFTP packet
+	 * @return
+	 */
 	public String getErrorMessage() {
 		return this.errorMessage;
 	}

@@ -2,8 +2,11 @@ import java.io.ByteArrayOutputStream;
 
 public class TftpData extends TftpPacket {
 
+	//The maximum size of data allowed
 	static final int MAX_SIZE = 512;
+	//The minimum size of the TFTP data packet
 	static final int MIN_SIZE = 4;
+	
 	int blockNumber = 0;
 	byte[] data = null;
 	int dataLength;

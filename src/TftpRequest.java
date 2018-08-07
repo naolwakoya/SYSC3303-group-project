@@ -1,11 +1,16 @@
 import java.io.ByteArrayOutputStream;
 
+/**
+ * Represents the TFTP Request packets
+ *
+ */
 public class TftpRequest extends TftpPacket {
 
 	// Assume filename is at least 1 character long
 	private static final int MIN_LENGTH = 10;
 	private String fileName;
 	private String type;
+	// Set default to ascii since this doesn't matter for this project
 	private String mode = "ascii";
 
 	public TftpRequest(){
@@ -21,10 +26,18 @@ public class TftpRequest extends TftpPacket {
 		this.fileName = fileName;
 	}
 
+	/**
+	 * returns the filename
+	 * @return
+	 */
 	public String getFileName() {
 		return fileName;
 	}
 
+	/**
+	 * returns the type of request packet (RRQ or WRQ)
+	 * @return
+	 */
 	public String getType() {
 		return type;
 	}

@@ -25,6 +25,9 @@ public class TftpServer {
 		}
 	}
 
+	/**
+	 * Wait to receive a request packet from a client
+	 */
 	public void startReceiving() {
 		DatagramPacket receivePacket;
 		Thread thread;
@@ -101,8 +104,9 @@ public class TftpServer {
 		return threadCount;
 	}
 
-	/*
-	 * returns the server socket
+	/**
+	 * Returns the server socket
+	 * @return
 	 */
 	public DatagramSocket getServerSocket() {
 		return serverSocket;
