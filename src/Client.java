@@ -382,7 +382,10 @@ public class Client {
 
 					} else if (receivePacket.getData()[1] == 1 || receivePacket.getData()[1] == 2) {
 						throw new TftpException("Received request packet during data transfer");
+					} else {
+						throw new TftpException("Received packet with invalid op code");
 					}
+
 				} catch (SocketTimeoutException e) {
 					if (timeouts >= resendAttempts) {
 						throw new TftpException("Connection timed out");
@@ -535,13 +538,13 @@ public class Client {
 				else
 					System.out.println("Client is now in normal mode");
 			} else if (cmd[0].equals("host")) {
-				System.out.println("server: " + c.getServerAddress() +" port: " + c.getPort());
-			} else if ((cmd[0].equals("server"))){
+				System.out.println("server: " + c.getServerAddress() + " port: " + c.getPort());
+			} else if ((cmd[0].equals("server"))) {
 				System.out.println("Enter the ip or hostname");
 				input = s.nextLine().toLowerCase();
 				c.setServerAddress(InetAddress.getByName(input));
 				System.out.println("The client will now send to server: " + c.getServerAddress());
-			}else {
+			} else {
 				System.out.println("Invalid command: The available commands are:");
 				printHelpCommand();
 			}
@@ -562,9 +565,9 @@ public class Client {
 	}
 
 	public String getServerAddress() {
-		return serverAddress.getHostName() +"/" + serverAddress.getHostAddress();
+		return serverAddress.getHostName() + "/" + serverAddress.getHostAddress();
 	}
-	
+
 	public int getPort() {
 		return REQUEST_PORT;
 	}

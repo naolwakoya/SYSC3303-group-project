@@ -94,7 +94,8 @@ public class TftpClientConnectionThread implements Runnable {
 					// Check if packet is from an unknown transfer ID
 					if (receivePacket.getPort() != sourceTID) {
 						TftpError error = new TftpError(5, "Unknown transfer ID");
-						sendReceiveSocket.send(error.generatePacket(receivePacket.getAddress(), receivePacket.getPort()));
+						sendReceiveSocket
+								.send(error.generatePacket(receivePacket.getAddress(), receivePacket.getPort()));
 						try {
 							this.receiveExpected(blockNumber);
 						} catch (Exception e) {
@@ -134,7 +135,7 @@ public class TftpClientConnectionThread implements Runnable {
 			} while (!(fileData.length < 512));
 			System.out.println("TRANSFER: Done receiving file: " + fileName + " from client");
 			outputStream.close();
-			
+
 		} catch (IOException e) {
 			new File(filePath + fileName).delete();
 			return;
@@ -240,7 +241,7 @@ public class TftpClientConnectionThread implements Runnable {
 			System.exit(1);
 		}
 	}
-	
+
 	public void receiveExpected(int blockNumber) throws Exception {
 		int timeouts = 0;
 		try {
@@ -253,8 +254,7 @@ public class TftpClientConnectionThread implements Runnable {
 							// Check if not a valid data packet
 							if (!validData.validateFormat(receivePacket.getData(), receivePacket.getLength())) {
 								TftpError error = new TftpError(4, "Invalid data packet");
-								sendReceiveSocket
-										.send(error.generatePacket(destinationAddress, sourceTID));
+								sendReceiveSocket.send(error.generatePacket(destinationAddress, sourceTID));
 								throw new TftpException("Received an invalid data packet");
 							} else {
 								return;
@@ -269,8 +269,7 @@ public class TftpClientConnectionThread implements Runnable {
 						} else {
 							// Received a future block which is invalid
 							TftpError error = new TftpError(4, "Invalid block number");
-							sendReceiveSocket
-									.send(error.generatePacket(destinationAddress, sourceTID));
+							sendReceiveSocket.send(error.generatePacket(destinationAddress, sourceTID));
 						}
 						// Check to see if it is an ack packet
 					} else if (receivePacket.getData()[1] == 4) {
@@ -278,8 +277,7 @@ public class TftpClientConnectionThread implements Runnable {
 							// Check if not a valid ack packet
 							if (!validAck.validateFormat(receivePacket.getData(), receivePacket.getLength())) {
 								TftpError error = new TftpError(4, "Invalid ack packet");
-								sendReceiveSocket
-										.send(error.generatePacket(destinationAddress, sourceTID));
+								sendReceiveSocket.send(error.generatePacket(destinationAddress, sourceTID));
 								throw new TftpException("Received an invalid ack packet");
 							} else {
 								return;
@@ -287,8 +285,7 @@ public class TftpClientConnectionThread implements Runnable {
 						} else if (receivePacket.getData()[3] > blockNumber) {
 							// Received a future block which is invalid
 							TftpError error = new TftpError(4, "Invalid block number");
-							sendReceiveSocket
-									.send(error.generatePacket(destinationAddress, sourceTID));
+							sendReceiveSocket.send(error.generatePacket(destinationAddress, sourceTID));
 						}
 					} else if (receivePacket.getData()[1] == 5) {
 						if (receivePacket.getData()[3] != 5)
@@ -297,6 +294,8 @@ public class TftpClientConnectionThread implements Runnable {
 
 					} else if (receivePacket.getData()[1] == 1 || receivePacket.getData()[1] == 2) {
 						throw new TftpException("Received request packet during data transfer");
+					} else {
+						throw new TftpException("Received packet with invalid op code");
 					}
 				} catch (SocketTimeoutException e) {
 					if (timeouts >= resendAttempts) {
@@ -310,11 +309,11 @@ public class TftpClientConnectionThread implements Runnable {
 			throw new TftpException(e.getMessage());
 		}
 	}
-	
-	private void resendLastPacket() throws Exception{
+
+	private void resendLastPacket() throws Exception {
 		try {
 			sendReceiveSocket.send(resendPacket);
-		} catch (IOException e){
+		} catch (IOException e) {
 			throw new Exception(e.getMessage());
 		}
 	}
