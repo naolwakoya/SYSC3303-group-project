@@ -10,6 +10,10 @@ public class TftpAck extends TftpPacket {
 	
 	public TftpAck(){};
 
+	/**
+	 * Returns the block number of the tftp packet
+	 * @return
+	 */
 	public int getBlockNumber() {
 		return blockNumber;
 	}
@@ -24,6 +28,10 @@ public class TftpAck extends TftpPacket {
 		return data;
 	}
 
+	/**
+	 * Validates the format of the ACK packet
+	 * returns true if valid format
+	 */
 	@Override
 	public boolean validateFormat(byte[] data, int packetLength) {
 		if (data==null || packetLength < PACKET_LENGTH || packetLength != PACKET_LENGTH)

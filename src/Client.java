@@ -42,12 +42,22 @@ public class Client {
 		}
 	}
 
+	/**
+	 * Sets the inetAddress of the server
+	 * @param serverAddress
+	 */
 	public void setServerAddress(InetAddress serverAddress) {
 		this.serverAddress = serverAddress;
 	}
 
-	// Establishes a read or write connection with the server according to the
-	// TFTP protocol
+	/**
+	 * Establishes a read or write connection with the server according to the TFTP
+	 * protocol
+	 * 
+	 * @param fileName
+	 * @param request
+	 * @throws IOException
+	 */
 	public void establishConnection(String fileName, String request) throws IOException {
 		try {
 
@@ -95,8 +105,10 @@ public class Client {
 		destinationTID = receivePacket.getPort();
 	}
 
-	/*
+	/**
 	 * Writes a file to the server
+	 * 
+	 * @param fileName
 	 */
 	public void writeFile(String fileName) {
 		try {
@@ -190,8 +202,10 @@ public class Client {
 
 	}
 
-	/*
-	 * Reads a file from the server
+	/**
+	 * Reads a file from the server during the file transfer connection
+	 * 
+	 * @param fileName
 	 */
 	public void readFile(String fileName) {
 		String filePath = System.getProperty("user.dir") + "/clientFiles/" + fileName;
@@ -308,7 +322,10 @@ public class Client {
 		}
 	}
 
-	public void receive() {
+	/**
+	 * Receives a packet from the sendReceiveSocket
+	 */
+	public void receive() throws SocketTimeoutException {
 		// Create a DatagramPacket for receiving packets
 		byte receive[] = new byte[516];
 		receivePacket = new DatagramPacket(receive, receive.length);
@@ -327,6 +344,12 @@ public class Client {
 		}
 	}
 
+	/**
+	 * Verifies that the client is receiving the expected packet from the server
+	 * 
+	 * @param blockNumber
+	 * @throws Exception
+	 */
 	public void receiveExpected(int blockNumber) throws Exception {
 		int timeouts = 0;
 		try {
@@ -399,6 +422,11 @@ public class Client {
 		}
 	}
 
+	/**
+	 * Resends the last sent packet
+	 * 
+	 * @throws Exception
+	 */
 	private void resendLastPacket() throws Exception {
 		try {
 			sendReceiveSocket.send(resendPacket);
@@ -407,8 +435,8 @@ public class Client {
 		}
 	}
 
-	/*
-	 * Processes the received Datagram and Prints the packet information into the
+	/**
+	 * Processes the received Datagram and Prints the packet information onto the
 	 * console
 	 */
 	public void printPacketInformation(DatagramPacket packet) {
@@ -420,6 +448,11 @@ public class Client {
 		System.out.println("String form: " + packetString + "\n");
 	}
 
+	/**
+	 * Checks if the client/server are connected
+	 * 
+	 * @return true if connected
+	 */
 	public boolean isConnected() {
 		if (connected == true)
 			return true;
@@ -427,14 +460,14 @@ public class Client {
 			return false;
 	}
 
-	/*
+	/**
 	 * returns true if in verbose mode and false if in quiet mode
 	 */
 	public boolean getMode() {
 		return verbose;
 	}
 
-	/*
+	/**
 	 * Toggles between quiet mode and verbose mode
 	 */
 	public void toggleMode() {
@@ -444,11 +477,22 @@ public class Client {
 			verbose = true;
 	}
 
+	/**
+	 * Outputs packet information about the received ack packet
+	 * 
+	 * @param ack
+	 */
 	public void printAck(byte[] ack) {
 		System.out.println("Client: Received ACK Packet ");
 		System.out.println("Block#: " + ack[2] + ack[3]);
 	}
 
+	/**
+	 * Outputs packet information about the received error packet
+	 * 
+	 * @param error
+	 * @param packetLength
+	 */
 	public void printError(byte[] error, int packetLength) {
 		System.out.println("Client: Received ERROR Packet ");
 		// display error code to user
@@ -480,8 +524,10 @@ public class Client {
 		System.out.println("Error message:" + errorMsg.toString());
 	}
 
-	/*
-	 * returns the byte array of the data in the tftp data packet
+	/**
+	 * @param data
+	 * @param dataLength
+	 * @return the byte array of the data in the tftp data packet
 	 */
 	public byte[] parseData(byte[] data, int dataLength) {
 		System.out.println("Client: Received DATA packet ");
