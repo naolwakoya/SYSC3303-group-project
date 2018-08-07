@@ -49,7 +49,7 @@ public class ErrorSimulator{
 				//branch for normal operation
 				while(true){
 					byte[] data;
-					data = receiveClient();
+					data = receiveFromClient();
 
 					String packetType;
 					String requestType = "";
@@ -70,7 +70,7 @@ public class ErrorSimulator{
 
 					data = new byte[516];
 
-					data = receiveFromServer(data);
+					data = receiveFromServer();
 
 					//check if transaction is finished after packet forwarded to server
 					//last data packet has been received in a read request or write request
@@ -93,7 +93,7 @@ public class ErrorSimulator{
 
 				//branch for changing request packets opcode
 				byte[] data;
-				data = receiveClient();
+				data = receiveFromClient();
 
 				System.out.println("Altering opcode of request packet...");
 				data[0] = 9;
@@ -102,7 +102,7 @@ public class ErrorSimulator{
 
 				sendToServer(data);
 
-				data = receiveFromServer(data);
+				data = receiveFromServer();
 
 				sendToClient(data);
 
@@ -113,7 +113,7 @@ public class ErrorSimulator{
 				// takes the request packet and alters the filename
 				byte[] data;
 
-				data = receiveClient();
+				data = receiveFromClient();
 
 				System.out.println("Altering filename of request packet...");
 
@@ -139,7 +139,7 @@ public class ErrorSimulator{
 
 				sendToServer(msg);
 
-				data = receiveFromServer(data);
+				data = receiveFromServer();
 
 				sendToClient(data);
 
@@ -150,7 +150,7 @@ public class ErrorSimulator{
 
 				byte[] data;
 
-				data = receiveClient();
+				data = receiveFromClient();
 
 				System.out.println("Altering mode of request packet...");
 				System.out.println("Changing mode to: wrongMode");
@@ -172,7 +172,7 @@ public class ErrorSimulator{
 
 				sendToServer(msg);
 
-				data = receiveFromServer(data);
+				data = receiveFromServer();
 
 				sendToClient(data);
 
@@ -184,24 +184,22 @@ public class ErrorSimulator{
 				System.out.println("Changing Data packet's opcode...");
 				byte[] data;
 
-				data = receiveClient();
-
-				String requestType = getRequestType(data);
-
-				System.out.println(requestType);
+				data = receiveFromClient();
 
 				if(data[1] == 1) {
 					//if data[1] equals to 1, then it is a read request
 					//data packet will be received from the server
 					sendToServer(data);
 
-					data = receiveFromServer(data);
+					data = receiveFromServer();
+
+					System.out.println("Original opcode: " + data[0] + data[1]);
 
 					//alter the data's opcode
 					data[0] = 9;
 					data[1] = 9;
 
-					System.out.println("OPCODE changed to: " + data[0] + data[1]);
+					System.out.println("New changed to: " + data[0] + data[1]);
 
 					sendToClient(data);
 
@@ -213,25 +211,168 @@ public class ErrorSimulator{
 					//this branch will change the data packet sent from client and forward it to server
 					sendToServer(data);
 
-					data = receiveFromServer(data); //server sends ack
+					data = receiveFromServer(); //server sends ack
 
 					sendToClient(data); //forward ack to client
 
-					data = receiveClient(); //receive data packet
+					data = receiveFromClient(); //receive data packet from client
 
 					//alter the data's opcode to generate error
 					data[0] = 9;
 					data[1] = 9;
 
 					sendToClient(data); //send data packet to server with altered opcode
+
+					data = receiveFromServer(); //should receive an error packet
+
+					sendToClient(data); //forward error packet back to client
+
+					server1Port = 69;
 				}
 
 			}else if(operation == 8){
 				//branch for changing the block number in the data packet
+
+				System.out.println("Changing Data packet's block number...");
+				byte[] data;
+
+				data = receiveFromClient(); //receive packet from client, should be a request packet
+
+				if(data[1] == 1) {
+					//if data[1] equals to 1, then it is a read request
+					//data packet will be received from the server
+					sendToServer(data); //forward request packet to client
+
+					data = receiveFromServer();  // should be the first data packet from server
+
+					System.out.println("Original Block Number: " + data[2] + data[3]);
+
+					//alter the data's block number
+					data[2] = 9;
+					data[3] = 9;
+
+					System.out.println("New Block Number: " + data[2] + data[3]);
+
+					sendToClient(data); //sending the data packet with the changed block number to client
+
+					server1Port = 69;
+
+				}else if(data[1] == 2){
+					//if data[1] equals to 2, then it is a write request
+					//data packet will be received from the client
+
+					sendToServer(data);
+
+					data = receiveFromServer(); //server sends ack for write request
+
+					sendToClient(data); //forward ack to client
+
+					data = receiveFromClient(); //receive data packet from client
+
+					System.out.println("Original Block Number: " + data[2] + data[3]);
+
+					//alter the data's opcode to generate error
+					data[2] = 9;
+					data[3] = 9;
+
+					System.out.println("New Block Number changed to: " + data[2] + data[3]);
+
+					sendToClient(data); //send data packet to server with altered opcode
+
+					data = receiveFromServer(); //should receive an error packet
+
+					sendToClient(data); //forward error packet back to client
+
+					server1Port = 69;
+				}
+
 			}else if(operation == 9){
 				//branch for changing the opcode in the ack packet
+
+				System.out.println("Changing Ack packet's opcode...");
+				byte[] data;
+
+
+				data = receiveFromClient(); //receive packet from client, should be a request packet
+
+				if(data[1] == 1){
+					//read request, first ack packet will be send from client
+
+					sendToServer(data); //forwarding request packet to server
+
+					data = receiveFromServer();  //receive first data packet from server
+
+					sendToClient(data); //forward first data packet back to client
+
+					data = receiveFromClient(); //receive the first ack packet from the client
+
+					System.out.println("Original Opcode of Ack packet: " + data[0] + data[1]);
+
+					data[0] = 9;
+					data[1] = 9;
+
+					System.out.println("New Opcode of Ack packet: " + data[0] + data[1]);
+
+					System.out.println("Sending ack packet with altered opcode to server");
+
+					sendToServer(data);
+
+					server1Port = 69;
+
+				}else if(data[1] == 2){
+					//write request, first ack packet will be sent by server
+
+					sendToServer(data); //forwarding request packet to server
+
+					data = receiveFromServer(); //receive first ack packet from server
+
+					//change the ack packets opcode
+					System.out.println("Original Opcode of Ack packet: " + data[0] + data[1]);
+
+					data[0] = 9;
+					data[1] = 9;
+
+					System.out.println("New Opcode of Ack packet: " + data[0] + data[1]);
+
+					sendToClient(data);
+
+					server1Port = 69;
+
+				}
+
+
 			}else if(operation == 10){
 				//branch for changing the block number in the ack packet
+
+				System.out.println("Changing the ack packets block number");
+				byte[] data;
+
+				data = receiveFromClient(); // receive packet from client, should be request packet
+
+				if(data[1] == 1){
+					//read request, first ack packet will be sent by client
+
+					sendToServer(data); //forward request packet to server
+
+					data = receiveFromServer(); //receive first data packet from server
+
+					sendToClient(data); //forward first data packet back to client
+
+					data = receiveFromClient(); //receive the first ack packet from client
+
+					System.out.println("Original block number of Ack packet: " + data[2] + data[3]);
+
+					data[2] = 9;
+					data[3] = 9;
+
+					System.out.println("New block number of Ack packet: " + data[2] + data[3]);
+
+					sendToServer(data);
+
+					server1Port = 69;
+
+				}
+
 			}else if(operation ==11){
 				//branch for delaying a packet
 			}
@@ -311,7 +452,7 @@ public class ErrorSimulator{
 	}
 
 	//method to receive packet from client
-	private byte[] receiveClient(){
+	private byte[] receiveFromClient(){
 		// create byte array to hold packet to be received
 		byte[] data = new byte[516];
 
@@ -351,11 +492,11 @@ public class ErrorSimulator{
 		}
 	}
 
-	private byte[] receiveFromServer(byte[] data){
+	private byte[] receiveFromServer(){
 		System.out.println("\n");
 
 		// receive response from server
-		data = new byte[516];
+		byte[] data = new byte[516];
 		receivePacket = new DatagramPacket(data, data.length);
 		System.out.println("Receiving from server...");
 
