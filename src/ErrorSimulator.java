@@ -38,6 +38,7 @@ public class ErrorSimulator{
 		isConnected = true;
 	}
 
+
 	public void run() {
 		//if no connection has been established, the connect method will run
 		if (isConnected == false) {
@@ -90,7 +91,6 @@ public class ErrorSimulator{
 				readFinished = false;
 				writeFinished = false;
 			}else if(operation == 4){
-
 				//branch for changing request packets opcode
 				byte[] data;
 				data = receiveFromClient();
@@ -374,13 +374,23 @@ public class ErrorSimulator{
 				}
 
 			}else if(operation ==11){
-				//branch for delaying a packet
+				//branch for delaying a request packet
+
+
+			}else if(operation == 12){
+				//branch for delaying a data packet
+				
+			}else if(operation == 13){
+				//branch for delaying an ack packet
+
 			}
 
 		}
 	}
 
-	// asks the user what type of operation to perform
+	/*
+	Asks the user what operation they would like to do to the packets.
+	 */
 	public int getOperation() {
 		int response = 9;
 		System.out.println("What would you like change?");
@@ -388,7 +398,7 @@ public class ErrorSimulator{
 		System.out.println("(1): request packets");
 		System.out.println("(2): data packets");
 		System.out.println("(3): ack packets");
-		System.out.println("(4): Delay packet"); ////To-do
+		System.out.println("(4): Delay packet");
 
 		response = input.nextInt();
 
@@ -416,8 +426,9 @@ public class ErrorSimulator{
 		}else if(response == 4){
 			System.out.println("(4)Delay Packet chosen");
 			System.out.println("Which packet would you like to delay?");
-			System.out.println("(11): Data packet");
-			System.out.println("(12): Ack packet");
+			System.out.println("(11): Request Packet");
+			System.out.println("(12): Data packet");
+			System.out.println("(13): Ack packet");
 		}
 
 		response = input.nextInt();
