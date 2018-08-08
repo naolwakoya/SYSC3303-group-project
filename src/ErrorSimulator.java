@@ -73,7 +73,7 @@ public class ErrorSimulator {
 
 		// Will run for the entire connection file transfer unless an error
 		// occurs
-		while (!(lastData&&lastAck) || running) {
+		while (!(lastData&&lastAck) && running) {
 			this.receive();
 			// Forward the packet to the server
 			sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), serverAddress,
