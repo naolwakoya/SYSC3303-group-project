@@ -73,15 +73,14 @@ public class ErrorSimulator {
 
 		// Will run for the entire connection file transfer unless an error
 		// occurs
-		while (running) {
+		while (!(lastData&&lastAck) || running) {
 			this.receive();
 			// Forward the packet to the server
 			sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), serverAddress,
 					serverPort);
 			System.out.println("Forwarding packet to server on port " + sendPacket.getPort());
 			this.forwardPacket();
-			System.out.println("Packet forwarded.");
-			if (!running) {
+			if (!running || (lastAck&&lastData)) {
 				return;
 			}
 
@@ -91,7 +90,6 @@ public class ErrorSimulator {
 					clientPort);
 			System.out.println("Forwarding packet to client on port " + sendPacket.getPort());
 			this.forwardPacket();
-			System.out.println("Packet forwarded.");
 		}
 	}
 
@@ -123,6 +121,14 @@ public class ErrorSimulator {
 	 * error simulator
 	 */
 	private void forwardPacket() {
+		// Check if it is the last data packet
+		if (receivePacket.getData()[1] == 3 && receivePacket.getLength()<516) {
+			lastData = true;
+		}
+		// Check if it is the last ack packet
+		if (receivePacket.getData()[1] == 4 && lastData) {
+			lastAck = true;
+		}
 		// If the packet is an error packet forward the packet and do not run
 		// the file transfer
 		if (receivePacket.getData()[1] == 5) {
