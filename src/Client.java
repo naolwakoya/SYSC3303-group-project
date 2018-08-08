@@ -90,14 +90,14 @@ public class Client {
 			try {
 				this.receiveExpected(1);
 			} catch (Exception e) {
-				System.out.println(e.getMessage());
+				System.out.println("Connection timed out");
 				return;
 			}
 		} else if (request.equals("write")) {
 			try {
 				this.receiveExpected(0);
 			} catch (Exception e) {
-				System.out.println(e.getMessage());
+				System.out.println("Connection timed out");
 				return;
 			}
 		}
@@ -324,6 +324,7 @@ public class Client {
 
 	/**
 	 * Receives a packet from the sendReceiveSocket
+	 * @throws SocketTimeoutException 
 	 */
 	public void receive() throws SocketTimeoutException {
 		// Create a DatagramPacket for receiving packets
@@ -334,8 +335,7 @@ public class Client {
 			// Block until a datagram is received via sendReceiveSocket.
 			sendReceiveSocket.receive(receivePacket);
 		} catch (IOException e) {
-			e.printStackTrace();
-			System.exit(1);
+			throw new SocketTimeoutException();
 		}
 
 		if (verbose) {

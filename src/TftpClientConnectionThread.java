@@ -230,8 +230,9 @@ public class TftpClientConnectionThread implements Runnable {
 
 	/**
 	 * Waits to receive a packet from the sendReceive socket
+	 * @throws SocketTimeoutException 
 	 */
-	public void receive() {
+	public void receive() throws SocketTimeoutException {
 		// Create a DatagramPacket for receiving packets
 		byte receive[] = new byte[1024];
 		receivePacket = new DatagramPacket(receive, receive.length);
@@ -240,8 +241,7 @@ public class TftpClientConnectionThread implements Runnable {
 			// Block until a datagram is received via sendReceiveSocket.
 			sendReceiveSocket.receive(receivePacket);
 		} catch (IOException e) {
-			e.printStackTrace();
-			System.exit(1);
+			throw new SocketTimeoutException();
 		}
 	}
 
