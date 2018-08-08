@@ -10,7 +10,7 @@ import java.util.Scanner;
 
 public class Client {
 
-	int REQUEST_PORT = 8081;
+	int REQUEST_PORT = 8080;
 	int sourceTID, destinationTID;
 
 	int resendAttempts = 3;
@@ -44,7 +44,7 @@ public class Client {
 		try {
 
 			sendReceiveSocket = new DatagramSocket();
-			sendReceiveSocket.setSoTimeout(10000);
+			sendReceiveSocket.setSoTimeout(30000);
 		} catch (SocketException se) {
 			se.printStackTrace();
 			System.exit(1);
@@ -460,10 +460,16 @@ public class Client {
 	 * Toggles between quiet mode and verbose mode
 	 */
 	public void toggleMode() {
-		if (verbose)
-			verbose = false;
-		else
-			verbose = true;
+		if (test) {
+			test = false;
+			REQUEST_PORT = 8081;
+		}
+
+		else{
+			test = true;
+			REQUEST_PORT = 8080;
+		}
+
 	}
 
 	public void printAck(byte[] ack) {

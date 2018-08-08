@@ -17,7 +17,7 @@ public class TftpServer {
 			System.out.println("SERVER IS Instantiated");
 
 			// Create a datagram socket for receiving packets on port 69
-			serverSocket = new DatagramSocket(8082);
+			serverSocket = new DatagramSocket(8081);
 
 		} catch (SocketException se) {
 			se.printStackTrace();
@@ -78,12 +78,14 @@ public class TftpServer {
 		}
 	}
 
+
 	/*
 	 * returns the server socket
 	 */
-	public DatagramSocket getServerSocket() {
+	public DatagramSocket getServerSocket(){
 		return serverSocket;
 	}
+
 
 	public static void main(String[] args) {
 
