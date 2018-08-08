@@ -50,7 +50,6 @@ public class ErrorSimulator {
 		this.blockNumber = blockNumber;
 		this.newBlockNumber = newBlockNumber;
 		this.operation = operation;
-		
 		// Receive request from client
 		this.receiveRequest();
 		// Set the source TID
@@ -233,12 +232,12 @@ public class ErrorSimulator {
 	 */
 	private DatagramPacket invalidDataFormat(DatagramPacket packet) {
 		byte[] data = packet.getData();
-		int i = 516;
-		while (i < 1024) {
-			data[i] = (byte) 1;
-			i++;
-		}
-		return new DatagramPacket(data, data.length, packet.getAddress(), packet.getPort());
+		byte[] data2 = packet.getData();
+		byte[] newData = new byte [data.length+data2.length];
+		System.arraycopy(data, 0, newData, 0, data.length);
+		System.arraycopy(data2, 0, newData, data.length, data2.length);
+		
+		return new DatagramPacket(newData, newData.length, packet.getAddress(), packet.getPort());
 	}
 
 	/**
@@ -316,6 +315,19 @@ public class ErrorSimulator {
 			e.printStackTrace();
 			System.exit(1);
 		}
+	}
+	
+	/**
+	 * Processes the received Datagram and Prints the packet information onto the
+	 * console
+	 */
+	public void printPacketInformation(DatagramPacket packet) {
+		System.out.println("Host: " + packet.getAddress());
+		System.out.println("Host port: " + packet.getPort());
+		System.out.println("Packet length: " + packet.getLength());
+		System.out.println("Containing: " + packet.getData());
+		String packetString = new String(packet.getData(), 0, packet.getLength());
+		System.out.println("String form: " + packetString + "\n");
 	}
 
 	/**

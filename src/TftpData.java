@@ -40,7 +40,12 @@ public class TftpData extends TftpPacket {
 	public boolean validateFormat(byte[] data, int packetLength) {
 		if (data == null)
 			return false;
-		if (packetLength > data.length || packetLength < MIN_SIZE || packetLength > 516){
+		if (packetLength > data.length){
+			return false;
+		}
+		if (packetLength < MIN_SIZE)
+			return false;
+		if (packetLength > 516){
 			return false;
 		}
 		// Check the opcode

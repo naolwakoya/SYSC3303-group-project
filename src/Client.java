@@ -328,7 +328,7 @@ public class Client {
 	 */
 	public void receive() throws SocketTimeoutException {
 		// Create a DatagramPacket for receiving packets
-		byte receive[] = new byte[516];
+		byte receive[] = new byte[1024];
 		receivePacket = new DatagramPacket(receive, receive.length);
 
 		try {
