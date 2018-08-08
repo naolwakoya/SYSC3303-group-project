@@ -379,7 +379,7 @@ public class Client {
 						} else {
 							// Received a future block which is invalid
 							TftpError error = new TftpError(4, "Invalid block number");
-							sendReceiveSocket.send(error.generatePacket(serverAddress, receivePacket.getPort()));
+							sendReceiveSocket.send(error.generatePacket(serverAddress, destinationTID));
 						}
 						// Check to see if it is an ack packet
 					} else if (receivePacket.getData()[1] == 4) {
@@ -395,7 +395,7 @@ public class Client {
 						} else if (receivePacket.getData()[3] > blockNumber) {
 							// Received a future block which is invalid
 							TftpError error = new TftpError(4, "Invalid block number");
-							sendReceiveSocket.send(error.generatePacket(serverAddress, receivePacket.getPort()));
+							sendReceiveSocket.send(error.generatePacket(serverAddress, destinationTID));
 						}
 					} else if (receivePacket.getData()[1] == 5) {
 						printError(receivePacket.getData(), receivePacket.getLength());
@@ -406,7 +406,10 @@ public class Client {
 					} else if (receivePacket.getData()[1] == 1 || receivePacket.getData()[1] == 2) {
 						throw new TftpException("Received request packet during data transfer");
 					} else {
-						throw new TftpException("Received packet with invalid op code");
+						//Send an error packet
+						TftpError error = new TftpError(4, "Invalid opcode");
+						sendReceiveSocket.send(error.generatePacket(serverAddress, destinationTID));
+						throw new TftpException("Received a packet with Invalid opcode");
 					}
 
 				} catch (SocketTimeoutException e) {

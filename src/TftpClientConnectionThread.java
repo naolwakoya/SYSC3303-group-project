@@ -298,13 +298,16 @@ public class TftpClientConnectionThread implements Runnable {
 						}
 					} else if (receivePacket.getData()[1] == 5) {
 						if (receivePacket.getData()[3] != 5)
-							throw new TftpException("Received an error");
+							throw new TftpException("Received an error packet");
 						return;
 
 					} else if (receivePacket.getData()[1] == 1 || receivePacket.getData()[1] == 2) {
 						throw new TftpException("Received request packet during data transfer");
 					} else {
-						throw new TftpException("Received packet with invalid op code");
+						//Send an error packet
+						TftpError error = new TftpError(4, "Invalid opcode");
+						sendReceiveSocket.send(error.generatePacket(destinationAddress, sourceTID));
+						throw new TftpException("Received a packet with invalid op code");
 					}
 				} catch (SocketTimeoutException e) {
 					if (timeouts >= resendAttempts) {
