@@ -38,17 +38,16 @@ public class ErrorSimulator{
 		isConnected = true;
 	}
 
-
 	private void run() {
 		//if no connection has been established, the connect method will run
 		if (!isConnected) {
 			connect();
 		}
-		while(true){
+		while(true) {
 			int operation = getOperation();
-			if(operation == 0){
+			if (operation == 0) {
 				//branch for normal operation
-				while(true){
+				while (true) {
 					byte[] data;
 					data = receiveFromClient();
 
@@ -56,7 +55,7 @@ public class ErrorSimulator{
 					packetType = getPacketType(data);
 
 					//if data packet received from client is less than 516 bytes, then that is the last data packet
-					if(packetType.equals("data") && receivePacket.getLength()< 516){
+					if (packetType.equals("data") && receivePacket.getLength() < 516) {
 						writeFinished = true;
 						System.out.println("Last Packet received, terminating write transaction. PacketLength: " + receivePacket.getLength() + " " + writeFinished);
 					}
@@ -64,7 +63,7 @@ public class ErrorSimulator{
 					sendToServer(data);
 
 					//check to see if transaction is finished after ack packet sent to server in read situation
-					if(readFinished){
+					if (readFinished) {
 						server1Port = 69;
 						System.out.println("Breaking Loop");
 						break;
@@ -75,24 +74,23 @@ public class ErrorSimulator{
 					//check if transaction is finished after packet forwarded to server
 					//last data packet has been received in a read request or write request
 					packetType = getPacketType(data);
-					if(packetType.equals("data") && receivePacket.getLength()< 516){
+					if (packetType.equals("data") && receivePacket.getLength() < 516) {
 						readFinished = true;
 						System.out.println("Last Packet received, terminating read Transaction. PacketLength: " + receivePacket.getLength() + " " + readFinished);
 					}
 
 					sendToClient(data);
 
-					if(writeFinished){
+					if (writeFinished) {
 						server1Port = 69;
 						System.out.println("Breaking Loop");
 						break;
 					}
-
 				}
 
 				readFinished = false;
 				writeFinished = false;
-			}else if(operation == 4){
+			} else if (operation == 4) {
 				//branch for changing request packets opcode
 				byte[] data;
 				data = receiveFromClient();
@@ -146,7 +144,7 @@ public class ErrorSimulator{
 				sendToClient(data);
 
 				server1Port = 69;
-			}else if(operation == 6){
+			} else if (operation == 6) {
 				//branch for changing the mode in the request packet
 				//takes the request packet and alters the mode
 
@@ -180,7 +178,35 @@ public class ErrorSimulator{
 
 				server1Port = 69;
 
-			}else if(operation == 7){
+			} else if (operation == 61) {
+				//branch for changing the format of the request packet
+
+				byte[] data;
+
+				data = receiveFromClient();
+
+
+				System.out.println("Forwarding packet...");
+				try {
+					sendPacket = new DatagramPacket(data, receivePacket.getLength() - 1, InetAddress.getLocalHost(), server1Port);
+					System.out.println("Packet length: " + sendPacket.getLength());
+					System.out.println("Forwarding packet to server on port " + sendPacket.getPort());
+					sendReceiveSocket.send(sendPacket);
+					System.out.println("Packet of new size sent to server");
+
+
+				} catch (IOException ioe) {
+					ioe.printStackTrace();
+					System.exit(1);
+				}
+
+				data = receiveFromServer();
+
+				sendToClient(data);
+
+				server1Port = 69;
+
+			} else if (operation == 7) {
 				//branch for changing the opcode in the data packet
 
 				System.out.println("Changing Data packet's opcode...");
@@ -188,7 +214,7 @@ public class ErrorSimulator{
 
 				data = receiveFromClient();
 
-				if(data[1] == 1) {
+				if (data[1] == 1) {
 					//if data[1] equals to 1, then it is a read request
 					//data packet will be received from the server
 					sendToServer(data);
@@ -207,7 +233,7 @@ public class ErrorSimulator{
 
 					server1Port = 69;
 
-				}else if(data[1] == 2){
+				} else if (data[1] == 2) {
 					//if data[1] equals to 2, then it is a write request
 					//data packet will be received from the client
 					//this branch will change the data packet sent from client and forward it to server
@@ -232,7 +258,7 @@ public class ErrorSimulator{
 					server1Port = 69;
 				}
 
-			}else if(operation == 8){
+			} else if (operation == 8) {
 				//branch for changing the block number in the data packet
 
 				System.out.println("Changing Data packet's block number...");
@@ -240,7 +266,7 @@ public class ErrorSimulator{
 
 				data = receiveFromClient(); //receive packet from client, should be a request packet
 
-				if(data[1] == 1) {
+				if (data[1] == 1) {
 					//if data[1] equals to 1, then it is a read request
 					//data packet will be received from the server
 					sendToServer(data); //forward request packet to client
@@ -259,7 +285,7 @@ public class ErrorSimulator{
 
 					server1Port = 69;
 
-				}else if(data[1] == 2){
+				} else if (data[1] == 2) {
 					//if data[1] equals to 2, then it is a write request
 					//data packet will be received from the client
 
@@ -288,16 +314,73 @@ public class ErrorSimulator{
 					server1Port = 69;
 				}
 
-			}else if(operation == 9){
+			} else if (operation == 81) {
+				//branch to change data file format to invalid format
+
+
+				byte[] data;
+
+				data = receiveFromClient();
+
+				sendToServer(data);
+
+				if (data[1] == 1) {
+					//this brach is taken if the request is a read, if it is a read request, the first data packet
+					//received will be sent be the server
+
+					data = receiveFromServer();
+
+					System.out.println("Original Packet length: " + data.length);
+					try {
+						sendPacket = new DatagramPacket(data, receivePacket.getLength() - 5, clientAddress, clientPort);
+						System.out.println("New Packet length: " + sendPacket.getLength());
+						System.out.println("Forwarding packet back to client...");
+						sendReceiveSocket.send(sendPacket);
+						System.out.println("Packet forwarded. \n");
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+
+
+				} else if (data[1] == 2) {
+					//this branch is taken if the request is a write, if it is a write request, the first data packet
+					//will be received from the client
+
+					data = receiveFromServer(); //ack for request
+
+					sendToClient(data);
+
+					data = receiveFromClient();// first data packet
+
+					System.out.println("Original Packet length: " + data.length);
+					try {
+						sendPacket = new DatagramPacket(data, receivePacket.getLength() - 5, InetAddress.getLocalHost(), server1Port);
+						System.out.println("New Packet length: " + sendPacket.getLength());
+						System.out.println("Forwarding packet back to client...");
+						sendReceiveSocket.send(sendPacket);
+						System.out.println("Packet forwarded. \n");
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+
+
+					data = receiveFromServer(); // receive response from server
+
+					sendToClient(data);
+
+				}
+
+				server1Port = 69;
+
+			} else if (operation == 9) {
 				//branch for changing the opcode in the ack packet
 
 				System.out.println("Changing Ack packet's opcode...");
 				byte[] data;
 
-
 				data = receiveFromClient(); //receive packet from client, should be a request packet
 
-				if(data[1] == 1){
+				if (data[1] == 1) {
 					//read request, first ack packet will be send from client
 
 					sendToServer(data); //forwarding request packet to server
@@ -319,9 +402,7 @@ public class ErrorSimulator{
 
 					sendToServer(data);
 
-					server1Port = 69;
-
-				}else if(data[1] == 2){
+				} else if (data[1] == 2) {
 					//write request, first ack packet will be sent by server
 
 					sendToServer(data); //forwarding request packet to server
@@ -338,12 +419,10 @@ public class ErrorSimulator{
 
 					sendToClient(data);
 
-					server1Port = 69;
-
 				}
+				server1Port = 69;
 
-
-			}else if(operation == 10){
+			} else if (operation == 10) {
 				//branch for changing the block number in the ack packet
 
 				System.out.println("Changing the ack packets block number");
@@ -351,7 +430,7 @@ public class ErrorSimulator{
 
 				data = receiveFromClient(); // receive packet from client, should be request packet
 
-				if(data[1] == 1){
+				if (data[1] == 1) {
 					//read request, first ack packet will be sent by client
 
 					sendToServer(data); //forward request packet to server
@@ -370,10 +449,60 @@ public class ErrorSimulator{
 					System.out.println("New block number of Ack packet: " + data[2] + data[3]);
 
 					sendToServer(data);
+				}
+				server1Port = 69;
+
+			}else if(operation == 31){
+				//branch for changing the format of an ack packet
+
+				byte[] data;
+
+				data = receiveFromClient();
+
+				if(data[1] ==1){
+					//read request, first ack packet will be send by client after receiving the first data packet from server
+					sendToServer(data);
+
+					data = receiveFromServer();
+
+					sendToClient(data);
+
+					data = receiveFromClient(); //rreceive the first ack packet
+
+					//change the ack packets format
+					System.out.println("Original Packet length: " + data.length);
+					try {
+						sendPacket = new DatagramPacket(data, receivePacket.getLength() - 2, InetAddress.getLocalHost(), server1Port);
+						System.out.println("New Packet length: " + sendPacket.getLength());
+						System.out.println("Forwarding packet back to server...");
+						sendReceiveSocket.send(sendPacket);
+						System.out.println("Packet forwarded. \n");
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
 
 					server1Port = 69;
 
+				}else if(data[1] == 2){
+					//write request, first ack packet will be sent by server after receiving the request packet from client
+					sendToServer(data);
+
+					data = receiveFromServer(); // first ack packet to be received
+
+					System.out.println("Original Packet length: " + data.length);
+					try {
+						sendPacket = new DatagramPacket(data, receivePacket.getLength() - 2, InetAddress.getLocalHost(), server1Port);
+						System.out.println("New Packet length: " + sendPacket.getLength());
+						System.out.println("Forwarding packet back to server...");
+						sendReceiveSocket.send(sendPacket);
+						System.out.println("Packet forwarded. \n");
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+
 				}
+
+				server1Port = 69;
 
 			}else if(operation == 11){
 				//branch for delaying a request packet
@@ -566,7 +695,6 @@ public class ErrorSimulator{
 						}
 					}
 
-
 					sendToServer(data);
 
 					//check to see if transaction is finished after ack packet sent to server in read situation
@@ -608,8 +736,6 @@ public class ErrorSimulator{
 						System.out.println("Breaking Loop");
 						break;
 					}
-
-
 				}
 
 				readFinished = false;
@@ -618,16 +744,51 @@ public class ErrorSimulator{
 
 			}else if(operation == 14){
 				//branch for duplicating a request packet
+				byte[] data;
+
+				data = receiveFromClient();
+
+				sendToServer(data);
+				sendToServer(data); //send the request packet to server again to mimic duplicate error
+
+				data = receiveFromServer(); //should be error packet
+
+				sendToClient(data); //forward error packet back to client
+
+				server1Port = 69;
+
 			}else if(operation == 15){
 				//branch for duplicating a data packet
+
+				byte[] data;
+
+				data = receiveFromClient(); //receive request from client
+				sendToServer(data); // receive 
+
+
+
+
+
 			}else if(operation == 16){
 				//branch for duplicating an ack packet
+
+
+
 			}else if(operation == 17){
 				//branch for losing the request packet
+
+
+
 			}else if(operation == 18){
 				//branch for losing the first data packet
+
+
+
 			}else if(operation == 19){
 				//branch for losing an ack packet
+
+
+
 			}
 
 		}
@@ -646,6 +807,7 @@ public class ErrorSimulator{
 		System.out.println("(4): Delay a packet");
 		System.out.println("(5): Send duplicate packet");
 		System.out.println("(6): Lose a packet");
+		System.out.println("(7): Invalid TID");
 		System.out.println("(20): Close the ErrorSimulator");
 
 		response = input.nextInt();
@@ -661,16 +823,22 @@ public class ErrorSimulator{
 			System.out.println("(4): change opcode");
 			System.out.println("(5): change fileName");
 			System.out.println("(6): change mode");
+			System.out.println("(61): change file format");
+
 		} else if (response == 2) {
 			System.out.println("(2)Data Packets chosen.");
 			System.out.println("What would you like to do to the Data packets?");
 			System.out.println("(7): change opcode");
 			System.out.println("(8): change block number");
+			System.out.println("(81): change file format");
+
 		} else if (response == 3) {
 			System.out.println("(3)Acknowledgement Packets chosen.");
 			System.out.println("What would you like to do to the Ack packets?");
 			System.out.println("(9):  change opcode");
 			System.out.println("(10): change block number");
+			System.out.println("(31): change file format");
+
 		}else if(response == 4){
 			System.out.println("(4)Delay Packet chosen");
 			System.out.println("Which packet would you like to delay?");
@@ -687,6 +855,11 @@ public class ErrorSimulator{
 			System.out.println("(17): Request Packet");
 			System.out.println("(18): Data Packet");
 			System.out.println("(19): Ack Packet");
+		}else if(response == 7){
+			System.out.println("Which packet would you like to send to an invalid TID?");
+			System.out.println("(#): Request Packet");
+			System.out.println("(#): Data Packet");
+			System.out.println("(#): Ack Packet");
 		}
 
 		else if(response == 20){
@@ -716,15 +889,6 @@ public class ErrorSimulator{
 		return "error";
 	}
 
-	private String getRequestType(byte[] data){
-		if (data[1] == 1 ) {
-			return "read";
-		} else if (data[1] == 2) {
-			return "write";
-		}
-
-		return null;
-	}
 
 	//method to receive packet from client
 	private byte[] receiveFromClient(){
@@ -744,6 +908,7 @@ public class ErrorSimulator{
 			clientPort = receivePacket.getPort();
 
 			System.out.println("Packet received from client");
+			System.out.println("Packet length: " + receivePacket.getLength());
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.exit(1);
@@ -756,6 +921,7 @@ public class ErrorSimulator{
 		System.out.println("Forwarding packet...");
 		try {
 			sendPacket = new DatagramPacket(data, receivePacket.getLength(), InetAddress.getLocalHost(), server1Port);
+			System.out.println("Packet length: " + sendPacket.getLength());
 			System.out.println("Forwarding packet to server on port " + sendPacket.getPort());
 			sendReceiveSocket.send(sendPacket);
 			System.out.println("Packet forwarded.");
