@@ -44,6 +44,7 @@ public class Client {
 
 	/**
 	 * Sets the inetAddress of the server
+	 * 
 	 * @param serverAddress
 	 */
 	public void setServerAddress(InetAddress serverAddress) {
@@ -62,6 +63,7 @@ public class Client {
 		try {
 
 			sendReceiveSocket = new DatagramSocket();
+			sendReceiveSocket.setSoTimeout(2000);
 		} catch (SocketException se) {
 			se.printStackTrace();
 			System.exit(1);
@@ -323,7 +325,8 @@ public class Client {
 
 	/**
 	 * Receives a packet from the sendReceiveSocket
-	 * @throws SocketTimeoutException 
+	 * 
+	 * @throws SocketTimeoutException
 	 */
 	public void receive() throws SocketTimeoutException {
 		// Create a DatagramPacket for receiving packets
@@ -356,8 +359,7 @@ public class Client {
 			while (true) {
 				try {
 					this.receive();
-					block = ((receivePacket.getData()[2] << 8) & 0xFF00)
-							| (receivePacket.getData()[3] & 0xFF);
+					block = ((receivePacket.getData()[2] << 8) & 0xFF00) | (receivePacket.getData()[3] & 0xFF);
 					// Check if it is a data packet
 					if (receivePacket.getData()[1] == 3) {
 						if (block == blockNumber) {
@@ -408,7 +410,7 @@ public class Client {
 					} else if (receivePacket.getData()[1] == 1 || receivePacket.getData()[1] == 2) {
 						throw new TftpException("Received request packet during data transfer");
 					} else {
-						//Send an error packet
+						// Send an error packet
 						TftpError error = new TftpError(4, "Invalid opcode");
 						sendReceiveSocket.send(error.generatePacket(serverAddress, destinationTID));
 						throw new TftpException("Received a packet with Invalid opcode");

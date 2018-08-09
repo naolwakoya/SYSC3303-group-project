@@ -124,8 +124,14 @@ public class ErrorSimulator {
 		}
 		// Lose the request packet
 		else if (operation == 10 && losePacket) {
-			// Do nothing
 			losePacket = false;
+			//Wait for the host to resend the request packet
+			this.receive();
+			// Create packet to forward to the server
+			sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), serverAddress,
+					serverRequestPort);
+			System.out.println("Forwarding packet to server on port " + sendPacket.getPort());
+			this.forwardRequestPacket();
 		}
 		// Normal operation
 		else {
@@ -176,7 +182,7 @@ public class ErrorSimulator {
 				while (receivePacket.getData()[1]!=3) {
 					this.receive();
 				}
-				System.out.println("Received packet on port " + receivePacket.getPort());
+				System.out.println("Received packet from server on port " + receivePacket.getPort());
 				// Forward the packet
 				if(receivePacket.getPort()==clientPort) {
 				sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), serverAddress,
@@ -186,7 +192,7 @@ public class ErrorSimulator {
 					sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), clientAddress,
 							clientPort);
 				}
-				System.out.println("Forwarding packet on port " + sendPacket.getPort());
+				System.out.println("Forwarding packet to client on port " + sendPacket.getPort());
 				this.forwardPacket();
 			}
 			// Normal operation
