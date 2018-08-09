@@ -166,8 +166,7 @@ public class Client {
 				}
 				// Check if packet is from an unknown transfer ID
 				if (receivePacket.getPort() != destinationTID) {
-					TftpError error = new TftpError(5, "Unknown transfer ID");
-					sendReceiveSocket.send(error.generatePacket(serverAddress, receivePacket.getPort()));
+					System.out.println("Received packet from unknown transfer ID...ignoring...");
 					try {
 						this.receiveExpected(blockNumber);
 					} catch (Exception e) {
@@ -266,8 +265,7 @@ public class Client {
 				}
 				// Check if packet is from an unknown transfer ID
 				if (receivePacket.getPort() != destinationTID) {
-					TftpError error = new TftpError(5, "Unknown transfer ID");
-					sendReceiveSocket.send(error.generatePacket(serverAddress, receivePacket.getPort()));
+					System.out.println("Received packet from unknown transfer ID...ignoring...");
 					try {
 						this.receiveExpected(blockNumber);
 					} catch (Exception e) {

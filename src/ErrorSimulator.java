@@ -79,14 +79,19 @@ public class ErrorSimulator {
 		// Will run for the entire connection file transfer unless an error
 		// occurs
 		while (!(lastData && lastAck) && running) {
-			// Receive packet from client
+			// Receive packet
 			this.receive();
-			System.out.println("Received packet from client on port " + receivePacket.getPort());
+			System.out.println("Received packet from port " + receivePacket.getPort());
 			printPacketInformation(receivePacket);
 			// Forward the packet
-			sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), serverAddress,
-					serverPort);
-			System.out.println("Forwarding packet to server on port " + sendPacket.getPort());
+			if (receivePacket.getPort() == clientPort) {
+				sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), serverAddress,
+						serverPort);
+			} else if (receivePacket.getPort() == serverPort) {
+				sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), serverAddress,
+						clientPort);
+			}
+			System.out.println("Forwarding packet to port " + sendPacket.getPort());
 			this.forwardPacket();
 			if (!running || (lastAck && lastData)) {
 				sendReceiveSocket.close();
@@ -94,12 +99,17 @@ public class ErrorSimulator {
 			}
 			// Receive packet
 			this.receive();
-			System.out.println("Received packet from server on port " + receivePacket.getPort());
+			System.out.println("Received packet from port " + receivePacket.getPort());
 			printPacketInformation(receivePacket);
 			// Forward the packet
-			sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), clientAddress,
-					clientPort);
-			System.out.println("Forwarding packet to client on port " + sendPacket.getPort());
+			if (receivePacket.getPort() == clientPort) {
+				sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), serverAddress,
+						serverPort);
+			} else if (receivePacket.getPort() == serverPort) {
+				sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), serverAddress,
+						clientPort);
+			}
+			System.out.println("Forwarding packet to port " + sendPacket.getPort());
 			this.forwardPacket();
 		}
 		sendReceiveSocket.close();
@@ -125,7 +135,7 @@ public class ErrorSimulator {
 		// Lose the request packet
 		else if (operation == 10 && losePacket) {
 			losePacket = false;
-			//Wait for the host to resend the request packet
+			// Wait for the host to resend the request packet
 			this.receiveRequest();
 			// Create packet to forward to the server
 			sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), serverAddress,
@@ -182,23 +192,7 @@ public class ErrorSimulator {
 			// Lose the data packet
 			else if (operation == 11 && losePacket) {
 				losePacket = false;
-				//Wait for the host to resend the data packet
-				this.receive();
-				while (receivePacket.getData()[1]!=3 || receivePacket.getData()[1]==5) {
-					this.receive();
-				}
-				System.out.println("Received packet from server on port " + receivePacket.getPort());
-				// Forward the packet
-				if(receivePacket.getPort()==clientPort) {
-				sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), serverAddress,
-						serverPort);
-				}
-				else if (receivePacket.getPort()==serverPort) {
-					sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), clientAddress,
-							clientPort);
-				}
-				System.out.println("Forwarding packet to client on port " + sendPacket.getPort());
-				this.forwardPacket();
+				// Do not send the packet
 			}
 			// delay the data packet
 			else if (operation == 14) {
@@ -212,7 +206,8 @@ public class ErrorSimulator {
 				thread.start();
 			}
 			// invalid TID
-			else if (operation == 18) {
+			else if (operation == 18 && losePacket) {
+				losePacket = false;
 				DatagramSocket newSocket = null;
 				// Create new socket
 				try {
@@ -227,23 +222,6 @@ public class ErrorSimulator {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-				//Wait for the host to resend the data packet
-				this.receive();
-				while (receivePacket.getData()[1]!=4 || receivePacket.getData()[1]==5) {
-					this.receive();
-				}
-				System.out.println("Received packet on port " + receivePacket.getPort());
-				// Forward the packet
-				if(receivePacket.getPort()==clientPort) {
-				sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), serverAddress,
-						serverPort);
-				}
-				else if (receivePacket.getPort()==serverPort) {
-					sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), clientAddress,
-							clientPort);
-				}
-				System.out.println("Forwarding packet on port " + sendPacket.getPort());
-				this.forwardPacket();
 				newSocket.close();
 			}
 			// Normal operation
@@ -268,23 +246,7 @@ public class ErrorSimulator {
 			// Lose the ack packet
 			else if (operation == 12 && losePacket) {
 				losePacket = false;
-				//Wait for the host to resend the data packet
-				this.receive();
-				while (receivePacket.getData()[1]!=3 || receivePacket.getData()[1]==5) {
-					this.receive();
-				}
-				System.out.println("Received packet on port " + receivePacket.getPort());
-				// Forward the packet
-				if(receivePacket.getPort()==clientPort) {
-				sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), serverAddress,
-						serverPort);
-				}
-				else if (receivePacket.getPort()==serverPort) {
-					sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), clientAddress,
-							clientPort);
-				}
-				System.out.println("Forwarding packet on port " + sendPacket.getPort());
-				this.forwardPacket();
+				// Do not send the packet
 			}
 			// delay the ack packet
 			else if (operation == 15) {
@@ -297,6 +259,25 @@ public class ErrorSimulator {
 				Thread thread = new Thread(new TftpDelayThread(delay, sendPacket, sendReceiveSocket));
 				thread.start();
 			}
+			// invalid TID
+			else if (operation == 19 && losePacket) {
+				losePacket = false;
+				DatagramSocket newSocket = null;
+				// Create new socket
+				try {
+					newSocket = new DatagramSocket();
+				} catch (SocketException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				try {
+					newSocket.send(sendPacket);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				newSocket.close();
+			}
 			// Normal operation
 			else {
 				this.send(sendPacket);
@@ -308,8 +289,6 @@ public class ErrorSimulator {
 		}
 
 	}
-	
-	
 
 	/**
 	 * Changes the opcode of the packet to an invalid TFTP opcode
@@ -622,7 +601,7 @@ public class ErrorSimulator {
 				System.out.println("(16): DATA");
 				System.out.println("(17): ACK");
 				operation = s.nextInt();
-				 if (operation == 16 || operation == 17) {
+				if (operation == 16 || operation == 17) {
 					System.out.println("Which packet would you like to duplicate (block#)");
 					blockNumber = s.nextInt();
 					System.out.println("How much of a space between duplicates? (ms)");
@@ -638,8 +617,9 @@ public class ErrorSimulator {
 				System.out.println("(13)Invalid TID chosen.");
 				System.out.println("What type of packet do you want to have an invalid TID?");
 				System.out.println("(18): DATA");
+				System.out.println("(19): ACK");
 				operation = s.nextInt();
-				if (operation == 18) {
+				if (operation == 18 || operation == 19) {
 					System.out.println("Which packet would you like to have an invalid TID (block#)");
 					blockNumber = s.nextInt();
 					System.out.println("Performing operation to for invalid TID");
