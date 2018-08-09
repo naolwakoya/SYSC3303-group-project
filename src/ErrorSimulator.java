@@ -126,12 +126,17 @@ public class ErrorSimulator {
 		else if (operation == 10 && losePacket) {
 			losePacket = false;
 			//Wait for the host to resend the request packet
-			this.receive();
+			this.receiveRequest();
 			// Create packet to forward to the server
 			sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), serverAddress,
 					serverRequestPort);
 			System.out.println("Forwarding packet to server on port " + sendPacket.getPort());
 			this.forwardRequestPacket();
+		}
+		// Delay the request packet
+		else if (operation == 13) {
+			Thread thread = new Thread(new TftpDelayThread(delay, sendPacket, sendReceiveSocket));
+			thread.start();
 		}
 		// Normal operation
 		else {
@@ -179,7 +184,7 @@ public class ErrorSimulator {
 				losePacket = false;
 				//Wait for the host to resend the data packet
 				this.receive();
-				while (receivePacket.getData()[1]!=3) {
+				while (receivePacket.getData()[1]!=3 || receivePacket.getData()[1]==5) {
 					this.receive();
 				}
 				System.out.println("Received packet from server on port " + receivePacket.getPort());
@@ -194,6 +199,52 @@ public class ErrorSimulator {
 				}
 				System.out.println("Forwarding packet to client on port " + sendPacket.getPort());
 				this.forwardPacket();
+			}
+			// delay the data packet
+			else if (operation == 14) {
+				Thread thread = new Thread(new TftpDelayThread(delay, sendPacket, sendReceiveSocket));
+				thread.start();
+			}
+			// duplicate the packet
+			else if (operation == 16) {
+				this.send(sendPacket);
+				Thread thread = new Thread(new TftpDelayThread(delay, sendPacket, sendReceiveSocket));
+				thread.start();
+			}
+			// invalid TID
+			else if (operation == 18) {
+				DatagramSocket newSocket = null;
+				// Create new socket
+				try {
+					newSocket = new DatagramSocket();
+				} catch (SocketException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				try {
+					newSocket.send(sendPacket);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				//Wait for the host to resend the data packet
+				this.receive();
+				while (receivePacket.getData()[1]!=4 || receivePacket.getData()[1]==5) {
+					this.receive();
+				}
+				System.out.println("Received packet on port " + receivePacket.getPort());
+				// Forward the packet
+				if(receivePacket.getPort()==clientPort) {
+				sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), serverAddress,
+						serverPort);
+				}
+				else if (receivePacket.getPort()==serverPort) {
+					sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), clientAddress,
+							clientPort);
+				}
+				System.out.println("Forwarding packet on port " + sendPacket.getPort());
+				this.forwardPacket();
+				newSocket.close();
 			}
 			// Normal operation
 			else {
@@ -219,7 +270,7 @@ public class ErrorSimulator {
 				losePacket = false;
 				//Wait for the host to resend the data packet
 				this.receive();
-				while (receivePacket.getData()[1]!=3) {
+				while (receivePacket.getData()[1]!=3 || receivePacket.getData()[1]==5) {
 					this.receive();
 				}
 				System.out.println("Received packet on port " + receivePacket.getPort());
@@ -235,6 +286,17 @@ public class ErrorSimulator {
 				System.out.println("Forwarding packet on port " + sendPacket.getPort());
 				this.forwardPacket();
 			}
+			// delay the ack packet
+			else if (operation == 15) {
+				Thread thread = new Thread(new TftpDelayThread(delay, sendPacket, sendReceiveSocket));
+				thread.start();
+			}
+			// duplicate the packet
+			else if (operation == 17) {
+				this.send(sendPacket);
+				Thread thread = new Thread(new TftpDelayThread(delay, sendPacket, sendReceiveSocket));
+				thread.start();
+			}
 			// Normal operation
 			else {
 				this.send(sendPacket);
@@ -246,6 +308,8 @@ public class ErrorSimulator {
 		}
 
 	}
+	
+	
 
 	/**
 	 * Changes the opcode of the packet to an invalid TFTP opcode
@@ -392,6 +456,22 @@ public class ErrorSimulator {
 		// Error packet
 		else if (packet.getData()[1] == 5) {
 			System.out.println("Error packet");
+			int errorCode = packet.getData()[3]; // get error code
+			if (errorCode == 1) {
+				System.out.println("Error Code: 01: File not found. ");
+			} else if (errorCode == 2) {
+				System.out.println("Error Code: 02: Access violation. ");
+			} else if (errorCode == 3) {
+				System.out.println("Error Code: 03: Disk full or allocation exceeded. ");
+			} else if (errorCode == 4) {
+				System.out.println("Error Code: 04: Illegal TFTP Operation.");
+			} else if (errorCode == 5) {
+				System.out.println("Error Code: 05: Unknown transfer ID.");
+			} else if (errorCode == 6) {
+				System.out.println("Error Code: 06: File already exists. ");
+			} else {
+				System.out.println("Invalid error code");
+			}
 		}
 	}
 
@@ -539,18 +619,10 @@ public class ErrorSimulator {
 			} else if (input == 12) {
 				System.out.println("(12)Duplicate a packet chosen.");
 				System.out.println("What type of packet do you want to duplicate?");
-				System.out.println("(16): Request");
-				System.out.println("(17): DATA");
-				System.out.println("(18): ACK");
+				System.out.println("(16): DATA");
+				System.out.println("(17): ACK");
 				operation = s.nextInt();
-				if (operation == 16) {
-					System.out.println("How much of a space between duplicates? (ms)");
-					delay = s.nextInt();
-					er.setDelay(delay);
-					System.out.println("Performing operation to duplicate packet");
-					er.run(operation, blockNumber, newBlockNumber);
-					System.out.println("Operation complete...");
-				} else if (operation == 17 || operation == 18) {
+				 if (operation == 16 || operation == 17) {
 					System.out.println("Which packet would you like to duplicate (block#)");
 					blockNumber = s.nextInt();
 					System.out.println("How much of a space between duplicates? (ms)");
@@ -565,10 +637,9 @@ public class ErrorSimulator {
 			} else if (input == 13) {
 				System.out.println("(13)Invalid TID chosen.");
 				System.out.println("What type of packet do you want to have an invalid TID?");
-				System.out.println("(19): DATA");
-				System.out.println("(20): ACK");
+				System.out.println("(18): DATA");
 				operation = s.nextInt();
-				if (operation == 19 || operation == 20) {
+				if (operation == 18) {
 					System.out.println("Which packet would you like to have an invalid TID (block#)");
 					blockNumber = s.nextInt();
 					System.out.println("Performing operation to for invalid TID");
