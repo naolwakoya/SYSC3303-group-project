@@ -279,6 +279,7 @@ public class TftpClientConnectionThread implements Runnable {
 							// Received a future block which is invalid
 							TftpError error = new TftpError(4, "Invalid block number");
 							sendReceiveSocket.send(error.generatePacket(destinationAddress, sourceTID));
+							throw new TftpException("Received an invalid block number");
 						}
 						// Check to see if it is an ack packet
 					} else if (receivePacket.getData()[1] == 4) {
@@ -295,6 +296,7 @@ public class TftpClientConnectionThread implements Runnable {
 							// Received a future block which is invalid
 							TftpError error = new TftpError(4, "Invalid block number");
 							sendReceiveSocket.send(error.generatePacket(destinationAddress, sourceTID));
+							throw new TftpException("Received an invalid block number");
 						}
 					} else if (receivePacket.getData()[1] == 5) {
 						if (receivePacket.getData()[3] != 5)

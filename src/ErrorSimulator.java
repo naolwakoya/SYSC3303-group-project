@@ -9,7 +9,7 @@ public class ErrorSimulator {
 	private DatagramPacket receivePacket, sendPacket;
 
 	boolean running = true;
-	boolean lastAck, lastData, losePacket;
+	boolean lastAck, lastData, modifyPacket;
 
 	InetAddress clientAddress, serverAddress;
 	int clientPort, serverPort;
@@ -43,7 +43,7 @@ public class ErrorSimulator {
 		lastAck = false;
 		lastData = false;
 		running = true;
-		losePacket = true;
+		modifyPacket = true;
 		// Set the sendReceive socket
 		try {
 			sendReceiveSocket = new DatagramSocket();
@@ -133,8 +133,8 @@ public class ErrorSimulator {
 			this.send(invalidRequestFormat(sendPacket));
 		}
 		// Lose the request packet
-		else if (operation == 10 && losePacket) {
-			losePacket = false;
+		else if (operation == 10 && modifyPacket) {
+			modifyPacket = false;
 			// Wait for the host to resend the request packet
 			this.receiveRequest();
 			// Create packet to forward to the server
@@ -186,12 +186,13 @@ public class ErrorSimulator {
 				this.send(invalidFormat(sendPacket));
 			}
 			// Change block number of data packet
-			else if (operation == 6) {
+			else if (operation == 6 && modifyPacket) {
+				modifyPacket = false;
 				this.send(changeBlockNumber(sendPacket));
 			}
 			// Lose the data packet
-			else if (operation == 11 && losePacket) {
-				losePacket = false;
+			else if (operation == 11 && modifyPacket) {
+				modifyPacket = false;
 				// Do not send the packet
 			}
 			// delay the data packet
@@ -206,8 +207,8 @@ public class ErrorSimulator {
 				thread.start();
 			}
 			// invalid TID
-			else if (operation == 18 && losePacket) {
-				losePacket = false;
+			else if (operation == 18 && modifyPacket) {
+				modifyPacket = false;
 				DatagramSocket newSocket = null;
 				// Create new socket
 				try {
@@ -240,12 +241,13 @@ public class ErrorSimulator {
 				this.send(invalidFormat(sendPacket));
 			}
 			// Change block number of ack packet
-			else if (operation == 9) {
+			else if (operation == 9 && modifyPacket) {
+				modifyPacket = false;
 				this.send(changeBlockNumber(sendPacket));
 			}
 			// Lose the ack packet
-			else if (operation == 12 && losePacket) {
-				losePacket = false;
+			else if (operation == 12 && modifyPacket) {
+				modifyPacket = false;
 				// Do not send the packet
 			}
 			// delay the ack packet
@@ -260,8 +262,8 @@ public class ErrorSimulator {
 				thread.start();
 			}
 			// invalid TID
-			else if (operation == 19 && losePacket) {
-				losePacket = false;
+			else if (operation == 19 && modifyPacket) {
+				modifyPacket = false;
 				DatagramSocket newSocket = null;
 				// Create new socket
 				try {
