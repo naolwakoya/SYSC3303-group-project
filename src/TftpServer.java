@@ -79,7 +79,11 @@ public class TftpServer {
 		while (getThreadCount()>0) {
 			try {
 				wait();
-			}catch (InterruptedException e) {
+			}
+			catch (IllegalMonitorStateException e) {
+				
+			}
+			catch (InterruptedException e) {
 				System.out.println("Quit was interrupted. Failed to quit.");
 				System.exit(1);
 			}
