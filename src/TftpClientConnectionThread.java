@@ -253,13 +253,16 @@ public class TftpClientConnectionThread implements Runnable {
 	 */
 	public void receiveExpected(int blockNumber) throws Exception {
 		int timeouts = 0;
+		int block;
 		try {
 			while (true) {
 				try {
 					this.receive();
+					block = ((receivePacket.getData()[2] << 8) & 0xFF00)
+							| (receivePacket.getData()[3] & 0xFF);
 					// Check if it is a data packet
 					if (receivePacket.getData()[1] == 3) {
-						if (receivePacket.getData()[3] == blockNumber) {
+						if (block == blockNumber) {
 							// Check if not a valid data packet
 							if (!validData.validateFormat(receivePacket.getData(), receivePacket.getLength())) {
 								TftpError error = new TftpError(4, "Invalid data packet");
@@ -268,7 +271,7 @@ public class TftpClientConnectionThread implements Runnable {
 							} else {
 								return;
 							}
-						} else if (receivePacket.getData()[3] < blockNumber) {
+						} else if (block < blockNumber) {
 							// Received an old data packets, so we are echoing
 							// the ack
 							TftpAck ack = new TftpAck(receivePacket.getData()[3]);
@@ -282,7 +285,7 @@ public class TftpClientConnectionThread implements Runnable {
 						}
 						// Check to see if it is an ack packet
 					} else if (receivePacket.getData()[1] == 4) {
-						if (receivePacket.getData()[3] == blockNumber) {
+						if (block == blockNumber) {
 							// Check if not a valid ack packet
 							if (!validAck.validateFormat(receivePacket.getData(), receivePacket.getLength())) {
 								TftpError error = new TftpError(4, "Invalid ack packet");
@@ -291,7 +294,7 @@ public class TftpClientConnectionThread implements Runnable {
 							} else {
 								return;
 							}
-						} else if (receivePacket.getData()[3] > blockNumber) {
+						} else if (block > blockNumber) {
 							// Received a future block which is invalid
 							TftpError error = new TftpError(4, "Invalid block number");
 							sendReceiveSocket.send(error.generatePacket(destinationAddress, sourceTID));

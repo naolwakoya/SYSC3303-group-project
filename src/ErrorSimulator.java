@@ -9,7 +9,7 @@ public class ErrorSimulator {
 	private DatagramPacket receivePacket, sendPacket;
 
 	boolean running = true;
-	boolean lastAck, lastData;
+	boolean lastAck, lastData, losePacket;
 
 	InetAddress clientAddress, serverAddress;
 	int clientPort, serverPort;
@@ -17,6 +17,7 @@ public class ErrorSimulator {
 	int serverRequestPort = 69;
 
 	private int blockNumber, newBlockNumber, operation;
+	private int delay;
 
 	public ErrorSimulator() {
 		// create new datagram sockets for the client and server
@@ -38,10 +39,11 @@ public class ErrorSimulator {
 	 * @param newBlockNumber
 	 */
 	public void run(int operation, int blockNumber, int newBlockNumber) {
-		//Reset boolean values
+		// Reset boolean values
 		lastAck = false;
 		lastData = false;
 		running = true;
+		losePacket = true;
 		// Set the sendReceive socket
 		try {
 			sendReceiveSocket = new DatagramSocket();
@@ -52,39 +54,49 @@ public class ErrorSimulator {
 		this.operation = operation;
 		// Receive request from client
 		this.receiveRequest();
+		System.out.println("Received packet from client on port " + receivePacket.getPort());
+		printPacketInformation(receivePacket);
 		// Set the source TID
 		clientPort = receivePacket.getPort();
 		clientAddress = receivePacket.getAddress();
 		// Create packet to forward to the server
 		sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), serverAddress,
 				serverRequestPort);
+		System.out.println("Forwarding packet to server on port " + sendPacket.getPort());
 		this.forwardRequestPacket();
 
 		// Receive response from server
 		this.receive();
+		System.out.println("Received packet from server on port " + receivePacket.getPort());
+		printPacketInformation(receivePacket);
 		// Set the destination TID
 		serverPort = receivePacket.getPort();
-		// Create packet to forward to client
+		// forward packet to client
 		sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), clientAddress, clientPort);
+		System.out.println("Forwarding packet to client on port " + sendPacket.getPort());
 		this.forwardPacket();
 
 		// Will run for the entire connection file transfer unless an error
 		// occurs
-		while (!(lastData&&lastAck) && running) {
+		while (!(lastData && lastAck) && running) {
 			// Receive packet from client
 			this.receive();
-			// Forward the packet to the server
+			System.out.println("Received packet from client on port " + receivePacket.getPort());
+			printPacketInformation(receivePacket);
+			// Forward the packet
 			sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), serverAddress,
 					serverPort);
 			System.out.println("Forwarding packet to server on port " + sendPacket.getPort());
 			this.forwardPacket();
-			if (!running || (lastAck&&lastData)) {
+			if (!running || (lastAck && lastData)) {
 				sendReceiveSocket.close();
 				return;
 			}
-
+			// Receive packet
 			this.receive();
-			// Forward the packet to the client
+			System.out.println("Received packet from server on port " + receivePacket.getPort());
+			printPacketInformation(receivePacket);
+			// Forward the packet
 			sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), clientAddress,
 					clientPort);
 			System.out.println("Forwarding packet to client on port " + sendPacket.getPort());
@@ -94,8 +106,8 @@ public class ErrorSimulator {
 	}
 
 	/**
-	 * Forwards the request packet to the client/server with packet
-	 * modifications by the error simulator
+	 * Forwards the request packet to the client/server with packet modifications by
+	 * the error simulator
 	 */
 	private void forwardRequestPacket() {
 		// Modify request to have invalid opcode
@@ -110,6 +122,11 @@ public class ErrorSimulator {
 		else if (operation == 3) {
 			this.send(invalidRequestFormat(sendPacket));
 		}
+		// Lose the request packet
+		else if (operation == 10 && losePacket) {
+			// Do nothing
+			losePacket = false;
+		}
 		// Normal operation
 		else {
 			this.send(sendPacket);
@@ -122,7 +139,7 @@ public class ErrorSimulator {
 	 */
 	private void forwardPacket() {
 		// Check if it is the last data packet
-		if (receivePacket.getData()[1] == 3 && receivePacket.getLength()<516) {
+		if (receivePacket.getData()[1] == 3 && receivePacket.getLength() < 516) {
 			lastData = true;
 		}
 		// Check if it is the last ack packet
@@ -145,11 +162,32 @@ public class ErrorSimulator {
 			}
 			// Modify data to have invalid format (>516 bytes)
 			else if (operation == 5) {
-				this.send(invalidDataFormat(sendPacket));
+				this.send(invalidFormat(sendPacket));
 			}
 			// Change block number of data packet
 			else if (operation == 6) {
 				this.send(changeBlockNumber(sendPacket));
+			}
+			// Lose the data packet
+			else if (operation == 11 && losePacket) {
+				losePacket = false;
+				//Wait for the host to resend the data packet
+				this.receive();
+				while (receivePacket.getData()[1]!=3) {
+					this.receive();
+				}
+				System.out.println("Received packet on port " + receivePacket.getPort());
+				// Forward the packet
+				if(receivePacket.getPort()==clientPort) {
+				sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), serverAddress,
+						serverPort);
+				}
+				else if (receivePacket.getPort()==serverPort) {
+					sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), clientAddress,
+							clientPort);
+				}
+				System.out.println("Forwarding packet on port " + sendPacket.getPort());
+				this.forwardPacket();
 			}
 			// Normal operation
 			else {
@@ -164,11 +202,32 @@ public class ErrorSimulator {
 			}
 			// Modify ack to have invalid format (>4 bytes)
 			else if (operation == 8) {
-				this.send(invalidAckFormat(sendPacket));
+				this.send(invalidFormat(sendPacket));
 			}
 			// Change block number of ack packet
 			else if (operation == 9) {
 				this.send(changeBlockNumber(sendPacket));
+			}
+			// Lose the ack packet
+			else if (operation == 12 && losePacket) {
+				losePacket = false;
+				//Wait for the host to resend the data packet
+				this.receive();
+				while (receivePacket.getData()[1]!=3) {
+					this.receive();
+				}
+				System.out.println("Received packet on port " + receivePacket.getPort());
+				// Forward the packet
+				if(receivePacket.getPort()==clientPort) {
+				sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), serverAddress,
+						serverPort);
+				}
+				else if (receivePacket.getPort()==serverPort) {
+					sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), clientAddress,
+							clientPort);
+				}
+				System.out.println("Forwarding packet on port " + sendPacket.getPort());
+				this.forwardPacket();
 			}
 			// Normal operation
 			else {
@@ -225,32 +284,18 @@ public class ErrorSimulator {
 	}
 
 	/**
-	 * Makes the data packet larger than 516 bytes
+	 * Makes the TFTP packet larger than the maximum size
 	 * 
 	 * @param packet
 	 * @return
 	 */
-	private DatagramPacket invalidDataFormat(DatagramPacket packet) {
+	private DatagramPacket invalidFormat(DatagramPacket packet) {
 		byte[] data = packet.getData();
 		byte[] data2 = packet.getData();
-		byte[] newData = new byte [data.length+data2.length];
+		byte[] newData = new byte[data.length + data2.length];
 		System.arraycopy(data, 0, newData, 0, data.length);
 		System.arraycopy(data2, 0, newData, data.length, data2.length);
-		
-		return new DatagramPacket(newData, newData.length, packet.getAddress(), packet.getPort());
-	}
 
-	/**
-	 * Makes the ack packet larger than 4 bytes
-	 * 
-	 * @param packet
-	 * @return
-	 */
-	private DatagramPacket invalidAckFormat(DatagramPacket packet) {
-		byte[] data = packet.getData();
-		byte[] newData = new byte[data.length + 1];
-		System.arraycopy(data, 0, newData, 0, data.length);
-		newData[newData.length] = 1;
 		return new DatagramPacket(newData, newData.length, packet.getAddress(), packet.getPort());
 	}
 
@@ -274,13 +319,13 @@ public class ErrorSimulator {
 	 * @param data
 	 */
 	private void send(DatagramPacket packet) {
+		printPacketInformation(packet);
 		try {
 			sendReceiveSocket.send(packet);
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
 			System.exit(1);
 		}
-		System.out.println("Packet forwarded.");
 	}
 
 	/**
@@ -316,42 +361,43 @@ public class ErrorSimulator {
 			System.exit(1);
 		}
 	}
-	
+
 	/**
 	 * Processes the received Datagram and Prints the packet information onto the
 	 * console
 	 */
 	public void printPacketInformation(DatagramPacket packet) {
 		System.out.println("Host: " + packet.getAddress());
-		System.out.println("Host port: " + packet.getPort());
 		System.out.println("Packet length: " + packet.getLength());
-		System.out.println("Containing: " + packet.getData());
-		String packetString = new String(packet.getData(), 0, packet.getLength());
-		System.out.println("String form: " + packetString + "\n");
+		// Request packet
+		if (packet.getData()[1] == 1 || packet.getData()[1] == 2) {
+			System.out.println("Request packet");
+		}
+		// Data packet
+		else if (packet.getData()[1] == 3) {
+			System.out.println("Data packet");
+			System.out.println("Block#: " + packet.getData()[2] + packet.getData()[3]);
+		}
+		// Ack packet
+		else if (packet.getData()[1] == 4) {
+			System.out.println("ACK packet");
+			System.out.println("Block#: " + packet.getData()[2] + packet.getData()[3]);
+		}
+		// Error packet
+		else if (packet.getData()[1] == 5) {
+			System.out.println("Error packet");
+		}
 	}
 
-	/**
-	 * Extracts the filename from the TFTP request packet
-	 * 
-	 * @param data
-	 * @param dataLength
-	 * @return
-	 */
-	private String extractFileName(byte[] data, int dataLength) {
-		int i = 1;
-		StringBuilder sb = new StringBuilder();
-		while (data[++i] != 0 && i < dataLength) {
-			sb.append((char) data[i]);
-		}
-
-		return sb.toString();
+	public void setDelay(int delay) {
+		this.delay = delay;
 	}
 
 	public static void main(String[] args) {
 		Scanner s = new Scanner(System.in);
 		ErrorSimulator er = new ErrorSimulator();
 		System.out.println("Error Simulator");
-		int input, operation;
+		int input, operation, delay;
 		int blockNumber = 0;
 		int newBlockNumber = 0;
 
@@ -377,8 +423,7 @@ public class ErrorSimulator {
 					System.out.println("Performing normal operation");
 					er.run(operation, blockNumber, newBlockNumber);
 					System.out.println("Operation complete...");
-				}
-				else {
+				} else {
 					System.out.println("Invalid command");
 				}
 			} else if (input == 1) {
@@ -392,8 +437,7 @@ public class ErrorSimulator {
 					System.out.println("Performing the modified operation");
 					er.run(operation, blockNumber, newBlockNumber);
 					System.out.println("Operation complete...");
-				}
-				else {
+				} else {
 					System.out.println("Invalid command");
 				}
 			} else if (input == 2) {
@@ -411,12 +455,11 @@ public class ErrorSimulator {
 					System.out.println("Performing operation with changed block number");
 					er.run(operation, blockNumber, newBlockNumber);
 					System.out.println("Operation complete...");
-				} else if (operation == 4 || operation == 5){
+				} else if (operation == 4 || operation == 5) {
 					System.out.println("Performing the modified operation");
 					er.run(operation, blockNumber, newBlockNumber);
 					System.out.println("Operation complete...");
-				}
-				else {
+				} else {
 					System.out.println("Invalid command");
 				}
 			} else if (input == 3) {
@@ -434,36 +477,100 @@ public class ErrorSimulator {
 					System.out.println("Performing operation with changed block number");
 					er.run(operation, blockNumber, newBlockNumber);
 					System.out.println("Operation complete...");
-				} else if (operation == 7 || operation == 8){
+				} else if (operation == 7 || operation == 8) {
 					System.out.println("Performing the modified operation");
 					er.run(operation, blockNumber, newBlockNumber);
 					System.out.println("Operation complete...");
-				}
-				else {
+				} else {
 					System.out.println("Invalid command");
 				}
 			} else if (input == 10) {
 				System.out.println("(10)Lose a packet chosen.");
-				System.out.println("Which packet do you want to lose? (eg. RRQ, 2 DATA, 3 ACK)");
-				operation = input;
-				er.run(operation, blockNumber, newBlockNumber);
+				System.out.println("What type of packet do you want to lose?");
+				System.out.println("(10): Request");
+				System.out.println("(11): DATA");
+				System.out.println("(12): ACK");
+				operation = s.nextInt();
+				if (operation == 10) {
+					System.out.println("Performing operation to lose packet");
+					er.run(operation, blockNumber, newBlockNumber);
+					System.out.println("Operation complete...");
+				} else if (operation == 11 || operation == 12) {
+					System.out.println("Which packet would you like to lose (block#)");
+					blockNumber = s.nextInt();
+					System.out.println("Performing operation to lose packet");
+					er.run(operation, blockNumber, newBlockNumber);
+					System.out.println("Operation complete...");
+				} else {
+					System.out.println("Invalid command");
+				}
 			} else if (input == 11) {
 				System.out.println("(11)Delay a packet chosen.");
-				System.out.println("Which packet do you want to delay? (eg. RRQ, 2 DATA, 3 ACK)");
-				operation = input;
-				er.run(operation, blockNumber, newBlockNumber);
-				System.out.println("How long of a delay?");
+				System.out.println("What type of packet do you want to delay?");
+				System.out.println("(13): Request");
+				System.out.println("(14): DATA");
+				System.out.println("(15): ACK");
+				operation = s.nextInt();
+				if (operation == 13) {
+					System.out.println("How long of a delay? (ms)");
+					delay = s.nextInt();
+					er.setDelay(delay);
+					System.out.println("Performing operation to delay packet");
+					er.run(operation, blockNumber, newBlockNumber);
+					System.out.println("Operation complete...");
+				} else if (operation == 14 || operation == 15) {
+					System.out.println("Which packet would you like to delay (block#)");
+					blockNumber = s.nextInt();
+					System.out.println("How long of a delay? (ms)");
+					delay = s.nextInt();
+					er.setDelay(delay);
+					System.out.println("Performing operation to delay packet");
+					er.run(operation, blockNumber, newBlockNumber);
+					System.out.println("Operation complete...");
+				} else {
+					System.out.println("Invalid command");
+				}
 			} else if (input == 12) {
 				System.out.println("(12)Duplicate a packet chosen.");
-				System.out.println("Which packet do you want to duplicate? (eg. RRQ, 2 DATA, 3 ACK)");
-				operation = input;
-				er.run(operation, blockNumber, newBlockNumber);
-				System.out.println("How long of a space between duplicates?");
+				System.out.println("What type of packet do you want to duplicate?");
+				System.out.println("(16): Request");
+				System.out.println("(17): DATA");
+				System.out.println("(18): ACK");
+				operation = s.nextInt();
+				if (operation == 16) {
+					System.out.println("How much of a space between duplicates? (ms)");
+					delay = s.nextInt();
+					er.setDelay(delay);
+					System.out.println("Performing operation to duplicate packet");
+					er.run(operation, blockNumber, newBlockNumber);
+					System.out.println("Operation complete...");
+				} else if (operation == 17 || operation == 18) {
+					System.out.println("Which packet would you like to duplicate (block#)");
+					blockNumber = s.nextInt();
+					System.out.println("How much of a space between duplicates? (ms)");
+					delay = s.nextInt();
+					er.setDelay(delay);
+					System.out.println("Performing operation to duplicate packet");
+					er.run(operation, blockNumber, newBlockNumber);
+					System.out.println("Operation complete...");
+				} else {
+					System.out.println("Invalid command");
+				}
 			} else if (input == 13) {
 				System.out.println("(13)Invalid TID chosen.");
-				System.out.println("Which packet do you want to have an invalid TID (eg. 2 DATA, 3 ACK)");
-				operation = input;
-				er.run(operation, blockNumber, newBlockNumber);
+				System.out.println("What type of packet do you want to have an invalid TID?");
+				System.out.println("(19): DATA");
+				System.out.println("(20): ACK");
+				operation = s.nextInt();
+				if (operation == 19 || operation == 20) {
+					System.out.println("Which packet would you like to have an invalid TID (block#)");
+					blockNumber = s.nextInt();
+					System.out.println("Performing operation to for invalid TID");
+					er.run(operation, blockNumber, newBlockNumber);
+					System.out.println("Operation complete...");
+				} else {
+					System.out.println("Invalid command");
+				}
 			} else if (input > 13) {
 				System.out.println("Closing the error simulator");
 				System.exit(0);
