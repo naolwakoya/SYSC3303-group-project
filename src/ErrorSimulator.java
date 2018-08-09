@@ -88,7 +88,7 @@ public class ErrorSimulator {
 				sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), serverAddress,
 						serverPort);
 			} else if (receivePacket.getPort() == serverPort) {
-				sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), serverAddress,
+				sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), clientAddress,
 						clientPort);
 			}
 			System.out.println("Forwarding packet to port " + sendPacket.getPort());
@@ -106,7 +106,7 @@ public class ErrorSimulator {
 				sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), serverAddress,
 						serverPort);
 			} else if (receivePacket.getPort() == serverPort) {
-				sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), serverAddress,
+				sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), clientAddress,
 						clientPort);
 			}
 			System.out.println("Forwarding packet to port " + sendPacket.getPort());
